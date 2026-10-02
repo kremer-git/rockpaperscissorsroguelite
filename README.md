@@ -1,5 +1,7 @@
 # Rock Paper Scissors — The Roguelite
 
+**Play online:** https://kremer-git.github.io/rockpaperscissorsroguelite/ (GitHub Pages; the root page forwards to `dist/`). Offline: open `dist/index.html` with the `dist/audio` folder beside it.
+
 It's just Rock, Paper, Scissors. With a build. And an economy. And store gaps that grow like Fibonacci.
 
 Each round you throw Rock, Paper or Scissors against an opponent who has already locked in a throw. Win for coins, tie for fewer coins, lose and the run ends unless you own an Extra Life. Stores sell upgrades from three skill trees, Extra Lives, rerolls and a reroll of your next opponent. Stores come after 1, 2, 3, 5, 8, 13, 21, 34, 55, 89… rounds. There is no cap and no final boss. Eventually probability wins. Nothing carries over between runs.
