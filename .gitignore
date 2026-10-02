@@ -1,0 +1,3 @@
+node_modules/
+# claude.ai artifact build (published separately); dist/index.html + dist/audio are the playable game
+dist/artifact.html

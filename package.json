@@ -1,0 +1,26 @@
+{
+  "name": "rps-roguelite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rock Paper Scissors, treated as a serious build-crafting roguelite.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --dev",
+    "typecheck": "tsc -p .",
+    "test": "tsx --test tests/*.test.ts",
+    "sim": "tsx src/sim/cli.ts all",
+    "sim:summary": "tsx src/sim/cli.ts summary",
+    "sim:curves": "tsx src/sim/cli.ts curves",
+    "sim:upgrades": "tsx src/sim/cli.ts upgrades",
+    "sim:scaling": "tsx src/sim/cli.ts scaling",
+    "sim:adversarial": "tsx src/sim/cli.ts adversarial",
+    "sim:stages": "tsx src/sim/cli.ts stages",
+    "sim:samples": "tsx src/sim/cli.ts samples"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6.0"
+  }
+}
