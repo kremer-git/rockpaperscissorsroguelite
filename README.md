@@ -130,6 +130,7 @@ Policies: Random, Baseline, Rock-, Paper-, Scissors-focused, Tie Economy, Greedy
 ## Adding art, audio and animation later
 
 - **Art:** every visual slot asks `assets.ts` for a key (`move.R`, `opp.oracle`, `up.skull`, `store.sign`, `ui.life`, …). Add `image: 'url or data URI'` to a key (or call `registerAsset`) and the placeholder glyph becomes an `<img>` everywhere. No screen changes.
+- **Opponent portraits:** all 20 opponents have illustrated portraits in `assets/portraits/<opponent id>.jpg` (256×256, face-cropped). The build copies them to `dist/portraits/`. They come from 1024×1024 originals cropped by `python3 scripts/portraits.py <folder of Name.jpg originals>`, where the crop box per face is a single line to tweak. If a file is missing, that opponent falls back to the initials tile. `tests/portraits.test.ts` checks that every opponent has exactly one 256×256 portrait, and the browser tests check that every portrait loads on the run, store and game-over screens.
 - **Audio:** `presentation.ts` maps engine events to sound keys (`choice`, `reveal`, `win`, `tie`, `loss`, `save`, `life`, `store`, `purchase`, `milestone`). Call `registerSound('win', () => …)`.
 - **Animation:** elements carry `data-fx` targets (`clash`, `banner`, `coins`, `lives`, `build`); queued engine events add CSS classes after render. Swap in richer animation without touching rules; the engine never waits on it. `prefers-reduced-motion` disables all of it.
 - A canvas/WebGL renderer could subscribe to the same events (`onEngineEvent`) and read the same `GameState`.

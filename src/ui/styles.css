@@ -466,3 +466,10 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .cue.mood-1, .mood-badge.mood-1 { border-color: #ff7a6b; color: #ffd2cc; }
 .mood-badge { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: .78rem; font-weight: 700; }
 .ht-said .ht-cell.said { opacity: .7; font-style: italic; }
+
+/* ---------- portraits ---------- */
+.portrait { overflow: hidden; }
+.portrait .asset-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: inherit; }
+.opp-head .portrait { width: 84px; height: 84px; border-radius: 14px; }
+.service .portrait.small { width: 56px; height: 56px; }
+@media (max-width: 760px) { .opp-head .portrait { width: 64px; height: 64px; border-radius: 12px; } }

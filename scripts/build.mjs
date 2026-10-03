@@ -20,6 +20,8 @@ const fragment = readFileSync('src/ui/page.html', 'utf8').replace('/*STYLES*/', 
 mkdirSync('dist', { recursive: true });
 // Audio ships next to the page (dist/audio/*.mp3) and loads on demand; it is not inlined.
 cpSync('assets/audio', 'dist/audio', { recursive: true });
+// Opponent portraits likewise ship as dist/portraits/<id>.jpg.
+cpSync('assets/portraits', 'dist/portraits', { recursive: true });
 writeFileSync('dist/artifact.html', fragment);
 const titleEnd = fragment.indexOf('</title>') + '</title>'.length;
 const head = fragment.slice(0, fragment.indexOf('<div id="app"'));

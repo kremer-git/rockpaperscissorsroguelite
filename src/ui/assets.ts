@@ -2,6 +2,7 @@
 // Today each key resolves to a placeholder glyph; a future art pass only needs
 // to add `image` URLs here (or call registerAsset) — no screen code changes.
 import { h } from './dom';
+import { OPPONENTS } from '../content/opponents';
 
 export interface AssetDef {
   glyph: string; // placeholder: a text glyph drawn in a tinted tile
@@ -34,6 +35,10 @@ const ASSETS: Record<string, AssetDef> = {
   'ui.reroll': { glyph: '↻', label: 'Reroll' },
 };
 
+// Opponent portraits ship next to the page as dist/portraits/<opponent id>.jpg (256×256, face-cropped by
+// scripts/portraits.py). If one fails to load, the initials tile above is shown instead.
+for (const o of OPPONENTS) ASSETS[o.portrait] = { ...(ASSETS[o.portrait] ?? { glyph: '?', label: o.name }), image: `portraits/${o.id}.jpg` };
+
 const TREE_GLYPH: Record<string, string> = { rock: '●', paper: '▭', scissors: '✂' };
 
 export function registerAsset(key: string, def: Partial<AssetDef>): void {
@@ -47,6 +52,15 @@ export function upgradeAsset(icon: string, tree: string, name: string): AssetDef
 
 export function asset(key: string, cls = '', fallback?: AssetDef): HTMLElement {
   const a = ASSETS[key] ?? fallback ?? { glyph: '?', label: key };
-  if (a.image) return h('img', { class: `asset ${cls}`, src: a.image, alt: a.label, 'data-asset': key });
+  if (a.image) {
+    const img = h('img', { class: `asset asset-img ${cls}`, src: a.image, alt: a.label, 'data-asset': key, draggable: 'false' }) as HTMLImageElement;
+    // Missing file (e.g. index.html copied without its portraits folder): fall back to the placeholder glyph.
+    img.addEventListener('error', () => img.replaceWith(glyphTile(key, cls, a)), { once: true });
+    return img;
+  }
+  return glyphTile(key, cls, a);
+}
+
+function glyphTile(key: string, cls: string, a: AssetDef): HTMLElement {
   return h('span', { class: `asset ${cls}`, role: 'img', 'aria-label': a.label, 'data-asset': key, style: a.tint ? `--tint: var(${a.tint})` : undefined }, a.glyph);
 }

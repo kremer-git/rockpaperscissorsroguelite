@@ -1,3 +1,4 @@
-node_modules/
+node_modules
+__pycache__/
 # claude.ai artifact build (published separately); dist/index.html + dist/audio are the playable game
 dist/artifact.html

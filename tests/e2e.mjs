@@ -239,6 +239,56 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   await page.close();
 }
 
+// ---------- portraits: every opponent shows its picture, everywhere; missing files fall back to initials ----------
+for (const [w, hgt] of [[1366, 768], [390, 844]]) {
+  const page = await open(w, hgt);
+  await page.keyboard.press('Enter');
+  await debug(page, async () => { await page.click('text=+1 life'); await page.fill('#dbg-stage', '9'); await page.click('#dbg-jump'); });
+  let ids = [];
+  await debug(page, async () => { ids = await page.$$eval('#dbg-opp option', (os) => os.map((o) => o.value)); });
+  const bad = [];
+  for (const id of ids) {
+    await debug(page, async () => { await page.selectOption('#dbg-opp', id); await page.click('#dbg-setopp'); });
+    const ok = await page.waitForFunction(() => { const i = document.querySelector('.opp-head .portrait img.asset-img'); return i && i.complete && i.naturalWidth === 256 ? i.getAttribute('src') : false; }, null, { timeout: 3000 }).then((h) => h.jsonValue()).catch(() => null);
+    if (ok !== `portraits/${id}.jpg`) bad.push(`${id}:${ok}`);
+  }
+  check(`${w}px: all ${ids.length} opponents show their own portrait in the opponent panel`, ids.length === 20 && bad.length === 0, bad.join(' '));
+  const box = await page.$eval('.opp-head .portrait', (el) => { const r = el.getBoundingClientRect(); const i = el.querySelector('img').getBoundingClientRect(); return [r.width, r.height, i.width, i.height]; });
+  check(`${w}px: portrait image fills its square tile`, box[0] >= 56 && Math.abs(box[0] - box[1]) < 1 && Math.abs(box[2] - box[0]) < 1 && Math.abs(box[3] - box[1]) < 1, box.join(','));
+  check(`${w}px: still no page scroll on desktop with portraits`, w < 500 || await noPageScroll(page));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/portrait-run-${w}.png` });
+  // store: next-opponent portrait
+  await debug(page, async () => { await page.click('text=Skip to store'); });
+  const storeImg = await page.waitForFunction(() => { const i = document.querySelector('.service .portrait img.asset-img'); return !!(i && i.complete && i.naturalWidth === 256); }, null, { timeout: 3000 }).then(() => true).catch(() => false);
+  check(`${w}px: store shows the next opponent's portrait`, storeImg);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/portrait-store-${w}.png` });
+  await page.close();
+}
+{
+  // game over: tiny portraits of everyone met
+  const page = await open(1366, 768);
+  await page.keyboard.press('Enter');
+  await debug(page, async () => { await page.fill('#dbg-stage', '9'); await page.click('#dbg-jump'); await page.click('text=LOSS if you throw R'); });
+  while (await page.$('#throw-R:not([disabled])') && !(await page.$('#go-over'))) { await debug(page, async () => { await page.click('text=LOSS if you throw R'); }); await page.keyboard.press('r'); await page.waitForTimeout(60); }
+  await page.click('#go-over');
+  const n = await page.waitForFunction(() => { const im = [...document.querySelectorAll('.opp-list .portrait img.asset-img')]; return im.length && im.every((i) => i.complete && i.naturalWidth === 256) ? im.length : 0; }, null, { timeout: 3000 }).then((h) => h.jsonValue()).catch(() => 0);
+  check('game over lists opponents with their portraits', n >= 1, `${n}`);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/portrait-over.png` });
+  await page.close();
+}
+{
+  // a copy of index.html without its portraits folder still works: initials appear instead
+  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route(/portraits\//, (r) => r.abort());
+  await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  await page.goto(PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
+  await page.keyboard.press('Enter'); await page.waitForTimeout(300);
+  const txt = await page.$eval('.opp-head .portrait', (el) => ({ img: !!el.querySelector('img'), text: el.textContent.trim() }));
+  check('missing portrait files fall back to initials (no broken image)', !txt.img && /^[A-Z]{2}$/.test(txt.text), JSON.stringify(txt));
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close();
 console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');
