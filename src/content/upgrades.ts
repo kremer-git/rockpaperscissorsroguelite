@@ -302,7 +302,7 @@ const PAPER: UpgradeDef[] = [
     scaling: { label: 'Plans left this stage', cap: `${CONTINGENCY}`, value: (_s, u) => `${num(u, 'charge')}` },
   },
   {
-    id: 'read-the-instructions', name: 'Actually I Read the Instructions', tree: 'paper', rarity: 'epic', cost: 0, maxStacks: 1, icon: 'up.manual',
+    id: 'read-the-instructions', name: 'Actually I Read the Instructions', tree: 'paper', rarity: 'legendary', cost: 0, maxStacks: 1, icon: 'up.manual',
     tags: ['info'], flavor: 'Page 1: “Welcome.” Page 2: everything.',
     describe: () => `On ${pct(INSTRUCTIONS)} of rounds, each throw button shows your TRUE chance to win and lose (their real odds, rounded to 5%). The other rounds, the page is smudged. They still roll the dice.`,
     intel: (f) => { f.trueOdds = true; f.trueOddsChance = Math.max(f.trueOddsChance, INSTRUCTIONS); },

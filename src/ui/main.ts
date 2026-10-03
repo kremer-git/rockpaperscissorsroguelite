@@ -6,14 +6,18 @@ import { h } from './dom';
 import { installPresentation, flushFx } from './presentation';
 import { applyAudioSettings, cueFor, installAudio, playCue, playSynth, setMusic, throwSound, type MusicTrack } from './audio';
 import { onEngineEvent } from '../core/engine';
+import { getOpponent } from '../core/opponentModel';
 import type { Screen as ScreenName } from './app';
 import { runScreen } from './runScreen';
 import { storeScreen } from './storeScreen';
 import { titleScreen, howtoScreen, gameOverScreen, HOWTO_STEPS } from './menus';
 import { debugPanel } from './debugPanel';
+
+/** Set at build time: true only in the dev/test build (debug panel), false in the published game. */
+declare const __DEBUG__: boolean;
 import { soundDock } from './soundDock';
 import { loadPrefs, savePrefs } from './prefs';
-import { AWARDS, connectRemote, loadLocal, recordRounds, saveProgress } from './awards';
+import { AWARDS, connectRemote, loadLocal, noteBeaten, noteMet, recordRounds, saveProgress } from './awards';
 
 const SAVE_KEY = 'rps-roguelite.run.v1';
 
@@ -40,7 +44,7 @@ const root = document.getElementById('app')!;
 const saved = load();
 
 const app: App = {
-  screen: 'title', state: null, last: null, allIn: false, debugOpen: false, debugEnabled: true,
+  screen: 'title', state: null, last: null, allIn: false, debugOpen: false, debugEnabled: __DEBUG__,
   toast: null, howtoStep: 0, hasSave: !!saved, soundOpen: false, prefs: loadPrefs(), progress: loadLocal(),
   actions: {
     start(seed?: number, mode?: 'normal' | 'hard') {
@@ -80,7 +84,7 @@ const app: App = {
     goOver() { if (app.state?.status === 'dead') { app.screen = 'over'; save(null); render(); focusFirst('#restart'); } },
     go(screen: Screen) { app.screen = screen; if (screen === 'howto') app.howtoStep = 0; if (screen === 'title') app.hasSave = !!load(); render(); },
     setHowto(i) { app.howtoStep = i; render(); },
-    toggleDebug() { app.debugOpen = !app.debugOpen; render(); },
+    toggleDebug() { if (!__DEBUG__) return; app.debugOpen = !app.debugOpen; render(); },
     render: () => render(),
     setPrefs(fn) { fn(app.prefs); savePrefs(app.prefs); render(); },
     notify(msg) { app.toast = msg; render(); window.setTimeout(() => { if (app.toast === msg) { app.toast = null; render(); } }, 3200); },
@@ -129,6 +133,7 @@ fitToScreen();
 
 const MUSIC_FOR: Record<ScreenName, MusicTrack> = { title: 'title', howto: 'title', run: 'rounds', store: 'store', over: 'title' };
 
+let lastScreen = '';
 function render(): void {
   setMusic(MUSIC_FOR[app.screen]);
   // Persist the run on every render so debug edits and preference-driven changes survive a reload too.
@@ -145,7 +150,9 @@ function render(): void {
   root.replaceChildren(view,
     app.toast ? h('div', { class: 'toast', role: 'status' }, app.toast) : '',
     soundDock(app),
-    app.debugOpen ? debugPanel(app) : '');
+    __DEBUG__ && app.debugOpen ? debugPanel(app) : '');
+  // A new screen starts at the top (on phones the page scrolls, and the old position would otherwise carry over).
+  if (app.screen !== lastScreen) { lastScreen = app.screen; window.scrollTo(0, 0); }
   if (focusedId) (document.getElementById(focusedId) as HTMLElement | null)?.focus({ preventScroll: true });
   flushFx(root);
 }
@@ -156,7 +163,7 @@ document.addEventListener('keydown', (e) => {
   const tag = (e.target as HTMLElement).tagName;
   if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
   const k = e.key.toLowerCase();
-  if (k === '`') { app.actions.toggleDebug(); e.preventDefault(); return; }
+  if (__DEBUG__ && k === '`') { app.actions.toggleDebug(); e.preventDefault(); return; }
   if (k === 'v') { app.actions.setPrefs((p) => { p.audio.muted = !p.audio.muted; applyAudioSettings(p.audio); }); return; }
   if (k === 'escape' && app.soundOpen) { app.soundOpen = false; render(); return; }
   const s = app.state;
@@ -200,6 +207,19 @@ installPresentation();
 installAudio();
 applyAudioSettings(app.prefs.audio);
 onEngineEvent((e) => playCue(cueFor(e)));
+// Opponents Defeated collection: a stretch counts as "met" once you've thrown against them, and as a defeat
+// when you survive the whole stretch and reach the store.
+onEngineEvent((e) => {
+  const s = app.state;
+  if (!s) return;
+  if (e.type === 'result' && s.stageHistory.length === 1) { noteMet(app.progress, s.opponentId); saveProgress(app.progress); }
+  if (e.type === 'storeEnter') {
+    const first = noteBeaten(app.progress, s.opponentId);
+    saveProgress(app.progress);
+    // Deferred: never re-render in the middle of the engine's round.
+    if (first) { const name = getOpponent(s.opponentId).name; window.setTimeout(() => app.actions.notify(`New in your collection: ${name} defeated.`), 0); }
+  }
+});
 
 // Keep an in-progress run across live page updates.
 window.claude?.hot?.snapshot?.(() => ({ state: app.state, screen: app.screen }));

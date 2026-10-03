@@ -13,9 +13,15 @@ export interface AssetDef {
 
 const ASSETS: Record<string, AssetDef> = {
   // Throws
-  'move.R': { glyph: '●', label: 'Rock', tint: '--rock' },
-  'move.P': { glyph: '▭', label: 'Paper', tint: '--paper' },
-  'move.S': { glyph: '✂', label: 'Scissors', tint: '--scissors' },
+  'move.R': { glyph: '●', label: 'Rock', tint: '--rock', image: 'art/move-R.webp' },
+  'move.P': { glyph: '▭', label: 'Paper', tint: '--paper', image: 'art/move-P.webp' },
+  'move.S': { glyph: '✂', label: 'Scissors', tint: '--scissors', image: 'art/move-S.webp' },
+  // Trophies (title-screen shelf), keyed by the round count that unlocks them
+  'award.100': { glyph: '100', label: '100-round trophy', image: 'art/award-100.webp' },
+  'award.200': { glyph: '200', label: '200-round trophy', image: 'art/award-200.webp' },
+  'award.300': { glyph: '300', label: '300-round trophy', image: 'art/award-300.webp' },
+  'award.400': { glyph: '400', label: '400-round trophy', image: 'art/award-400.webp' },
+  'award.500': { glyph: '500', label: '500-round trophy', image: 'art/award-500.webp' },
   // Opponent portraits (initials until portraits exist)
   'opp.repeater': { glyph: 'GA', label: 'Gary' }, 'opp.rock': { glyph: 'HA', label: 'Hank' },
   'opp.paper': { glyph: 'PA', label: 'Pam' }, 'opp.scissors': { glyph: 'CA', label: 'Cassie' },

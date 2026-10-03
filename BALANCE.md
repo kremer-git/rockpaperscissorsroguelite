@@ -90,6 +90,15 @@ New personas: Lenny (The Loop, medium), Sal (The Superstitious, medium), Moira (
 
 The simulated policies reroll away Delphine and John, so in the encounter report Felix carries most of the elite share. A human who finds Felix hard can reroll him the same way.
 
+## Round 6 (Instructions → legendary)
+
+*Actually I Read the Instructions* moved from epic (60¢) to legendary (95¢) at playtest request: in human hands it's the card that makes long runs possible. In simulation, 2,000 runs per policy:
+- **How often it shows up:** it's offered and bought half as often (5.6% → 2.9% of runs).
+- **Its effect when owned:** unchanged (+9.3 points of runs reaching store 6).
+- **Overall:** every policy is unchanged within noise: median 17–22 rounds, 21–31% reach store 6, p99 179–391.
+
+The simulated optimizer rates it only "solid", because it reads its own estimate well even without the card. Humans lean on the true odds far more, which is why the rarity follows the playtest. No other balance numbers changed this round.
+
 ## Store curve
 
 Compared linear, Fibonacci, quadratic, exponential ×1.8 and a tuned ×1.5 curve (`reports/curves.md`). Linear never produces absurd late gaps (33 rounds at store 11) so it fails the core fantasy. Exponential jumps to 38 and 68 too early, before builds exist, and has the fewest runs reaching store 8. Quadratic gets few runs past store 6. The tuned ×1.5 curve is essentially tied with Fibonacci on every metric; Fibonacci was kept because it grows faster late (×1.618 per stage vs ×1.5), which is what makes the final stretch feel absurd, and players recognise the sequence. Store indices sit at different round counts on each curve, so compare medians and gap survival rather than store numbers across curves. Uncapped.

@@ -38,7 +38,7 @@ Build: every save, charge and information upgrade (27 upgrades), no drawbacks. T
 
 ## 3. Economy abuse
 
-- Greedy policy, 1000 runs: max coins ever held 26366, max lives ever held 6.
+- Greedy policy, 1000 runs: max coins ever held 14216, max lives ever held 6.
 - Life prices (lifetime escalation ×2): 35, 70, 140, 280, 560, 1120, 2240, 4480, 8960, 17920. With 1,000,000 coins you can buy ~14 lives in a whole run.
 - Store rerolls in one visit: 6, 12, 24, 48, 96, 192, 384, 768 … (×2 each).
 - Opponent rerolls across a run: 45, 72, 115, 184, 295, 472, 755, 1208 … (×1.6 each).
@@ -46,5 +46,5 @@ Build: every save, charge and information upgrade (27 upgrades), no drawbacks. T
 
 ## 4. Tie-economy runaway check
 
-- Tie policy: 9.9 coins/round, median 21 rounds, tie rate 58.5%.
-- Optimizer: 12.9 coins/round, median 22 rounds.
+- Tie policy: 9.9 coins/round, median 21 rounds, tie rate 59.0%.
+- Optimizer: 12.6 coins/round, median 23 rounds.

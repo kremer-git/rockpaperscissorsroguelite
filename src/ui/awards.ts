@@ -6,6 +6,8 @@
 // shelf follows them across devices. The two are merged (union of awards, best
 // of records), so neither can erase the other.
 
+import { OPPONENTS } from '../content/opponents';
+
 export interface AwardDef {
   rounds: number;
   name: string;
@@ -13,7 +15,7 @@ export interface AwardDef {
 }
 
 export const AWARDS: AwardDef[] = [
-  { rounds: 100, name: 'Centurion', blurb: 'A hundred rounds. A normal, healthy amount of Rock Paper Scissors.' },
+  { rounds: 100, name: 'Congrats, You Played Yourself', blurb: 'A hundred rounds of a game most people settle in one. Truly, a choice.' },
   { rounds: 200, name: 'How Is This Still Fun for You?', blurb: 'Two hundred rounds. We’re impressed, and a little concerned.' },
   { rounds: 300, name: 'Your Hand Called. It Wants a Break.', blurb: 'Three hundred rounds. Please stretch your wrist.' },
   { rounds: 400, name: 'Get Yourself Checked Out', blurb: 'Four hundred rounds. This is a medical recommendation.' },
@@ -27,12 +29,16 @@ export interface Progress {
   bestHard: number;
   runs: number;
   unlocked: Record<string, Unlock>; // keyed by rounds threshold
+  /** Opponents Defeated collection: stretches played against each opponent, and stretches survived (= defeated). */
+  foes: Record<string, FoeRecord>;
 }
+
+export interface FoeRecord { met: number; beaten: number }
 
 const KEY = 'rps-roguelite.awards.v1';
 
 export function emptyProgress(): Progress {
-  return { best: 0, bestHard: 0, runs: 0, unlocked: {} };
+  return { best: 0, bestHard: 0, runs: 0, unlocked: {}, foes: {} };
 }
 
 function sanitize(p: unknown): Progress {
@@ -48,7 +54,16 @@ function sanitize(p: unknown): Progress {
       unlocked[k] = { at: typeof u.at === 'string' ? u.at : '', hard: !!u.hard, seed: n(u.seed) };
     }
   }
-  return { best: n(o.best), bestHard: n(o.bestHard), runs: n(o.runs), unlocked };
+  const foes: Record<string, FoeRecord> = {};
+  if (o.foes && typeof o.foes === 'object') {
+    for (const [id, v] of Object.entries(o.foes)) {
+      if (!OPPONENTS.some((x) => x.id === id) || !v || typeof v !== 'object') continue;
+      const f = v as Partial<FoeRecord>;
+      const met = n(f.met), beaten = n(f.beaten);
+      if (met || beaten) foes[id] = { met: Math.max(met, beaten ? 1 : 0), beaten };
+    }
+  }
+  return { best: n(o.best), bestHard: n(o.bestHard), runs: n(o.runs), unlocked, foes };
 }
 
 /** Union of two records: keep every award (earliest date, hard if either was hard), best of the numbers. */
@@ -59,7 +74,33 @@ export function mergeProgress(a: Progress, b: Progress): Progress {
     if (!x) unlocked[k] = v;
     else unlocked[k] = { at: x.at && v.at ? (x.at < v.at ? x.at : v.at) : x.at || v.at, hard: x.hard || v.hard, seed: x.seed || v.seed };
   }
-  return { best: Math.max(a.best, b.best), bestHard: Math.max(a.bestHard, b.bestHard), runs: Math.max(a.runs, b.runs), unlocked };
+  const foes: Record<string, FoeRecord> = { ...a.foes };
+  for (const [id, f] of Object.entries(b.foes ?? {})) {
+    const x = foes[id];
+    foes[id] = x ? { met: Math.max(x.met, f.met), beaten: Math.max(x.beaten, f.beaten) } : { ...f };
+  }
+  return { best: Math.max(a.best, b.best), bestHard: Math.max(a.bestHard, b.bestHard), runs: Math.max(a.runs, b.runs), unlocked, foes };
+}
+
+export type FoeStatus = 'unknown' | 'met' | 'defeated';
+
+export function foeStatus(p: Progress, id: string): FoeStatus {
+  const f = p.foes[id];
+  return !f ? 'unknown' : f.beaten > 0 ? 'defeated' : 'met';
+}
+
+/** A stretch against this opponent began (its first round was played). Returns true on the very first meeting. */
+export function noteMet(p: Progress, id: string): boolean {
+  const f = p.foes[id] ?? (p.foes[id] = { met: 0, beaten: 0 });
+  f.met++;
+  return f.met === 1;
+}
+
+/** You survived a whole stretch against this opponent and reached the store. Returns true on the first defeat. */
+export function noteBeaten(p: Progress, id: string): boolean {
+  const f = p.foes[id] ?? (p.foes[id] = { met: 1, beaten: 0 });
+  f.beaten++;
+  return f.beaten === 1;
 }
 
 /** Records a run's round count; returns awards newly unlocked. Pure: mutates only `p`. */

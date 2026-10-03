@@ -10,7 +10,9 @@ let chromium;
 try { ({ chromium } = require('playwright')); } catch {
   ({ chromium } = await import(process.env.PLAYWRIGHT_PATH ?? '/home/claude/.npm-global/lib/node_modules/playwright/index.mjs'));
 }
-const PAGE = pathToFileURL(path.resolve('dist/index.html')).href;
+// The test build (.e2e/) has the debug panel; the published dist/ build does not.
+const PAGE = pathToFileURL(path.resolve('.e2e/index.html')).href;
+const PUBLIC_PAGE = pathToFileURL(path.resolve('dist/index.html')).href;
 const SHOTS = process.env.E2E_SHOTS;
 let failures = 0;
 const check = (name, ok, extra = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${extra ? `  (${extra})` : ''}`); if (!ok) failures++; };
@@ -63,11 +65,8 @@ const addUp = async (page, id) => { await page.selectOption('#dbg-up', id); awai
   await page.click('.build-item[data-id="spreadsheet"] summary');
   await page.check('#show-spreadsheet');
   check('build panel switch brings the Hunch back', !!(await page.$('.read-item.hunch')));
-  const orderBefore = await page.$$eval('.build-item[data-tree="rock"]', (els) => els.map((e) => e.dataset.id));
-  await page.hover(`.build-item[data-id="${orderBefore[1]}"]`);
-  await page.click(`.build-item[data-id="${orderBefore[1]}"] button[aria-label^="Move"][aria-label$="up"]`);
-  const orderAfter = await page.$$eval('.build-item[data-tree="rock"]', (els) => els.map((e) => e.dataset.id));
-  check('▲ reorders within a tree', orderAfter[0] === orderBefore[1] && orderAfter[1] === orderBefore[0], orderAfter.join(','));
+  const rockIds = await page.$$eval('.build-item[data-tree="rock"]', (els) => els.map((e) => e.dataset.id));
+  check('build list is in purchase order, with no reorder controls', rockIds.join(',') === 'thick-skull,muscle-memory' && (await page.$$('.reorder, .build-item[draggable="true"]')).length === 0, rockIds.join(','));
   await page.click('#tree-toggle-rock');
   check('tree header collapses its list', (await page.$$('.build-item[data-tree="rock"]')).length === 0);
   await page.click('#build-toggle');
@@ -286,6 +285,101 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   await page.keyboard.press('Enter'); await page.waitForTimeout(300);
   const txt = await page.$eval('.opp-head .portrait', (el) => ({ img: !!el.querySelector('img'), text: el.textContent.trim() }));
   check('missing portrait files fall back to initials (no broken image)', !txt.img && /^[A-Z]{2}$/.test(txt.text), JSON.stringify(txt));
+  await page.close();
+}
+
+// ---------- round 6 ----------
+const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [...document.querySelectorAll(sel)]; return im.length && im.every((i) => i.complete && i.naturalWidth > 0) ? im.length : 0; }, sel, { timeout: 4000 }).then((h) => h.jsonValue()).catch(() => 0);
+{
+  // (1) the PUBLISHED build has no debug mode at all
+  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  await page.goto(PUBLIC_PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
+  check('public build: no "Press ` for debug mode" hint', !(await page.innerText('body')).includes('debug mode'));
+  await page.keyboard.press('Enter'); await page.keyboard.press('`'); await page.waitForTimeout(150);
+  check('public build: ` does not open a debug panel', !(await page.$('.debug')) && !!(await page.$('#throw-R')));
+  const html = (await import('node:fs')).readFileSync(new URL(PUBLIC_PAGE), 'utf8');
+  check('public build: debug code is not in the file', !/debug mode|dbg-jump/i.test(html));
+  // (2) throw art on the title, throw buttons and result
+  await page.goto(PUBLIC_PAGE);
+  check('title shows the three throw pictures', (await imgsLoaded(page, '.title-hands img.asset-img')) === 3);
+  // (3) trophy art (locked trophies are dimmed silhouettes)
+  check('trophy shelf shows five trophy pictures', (await imgsLoaded(page, '.medal-art img.asset-img')) === 5);
+  // (4) seed suggestion
+  check('seed box suggests “lizard spock”', (await page.getAttribute('#seed-input', 'placeholder')).includes('lizard spock'));
+  await page.keyboard.press('Enter');
+  check('throw buttons show the throw pictures', (await imgsLoaded(page, '.throw-art img.asset-img')) === 3);
+  await page.keyboard.press('r'); await page.waitForTimeout(150);
+  check('result shows throw pictures', (await imgsLoaded(page, '.result img.asset-img')) >= 2);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r6-run-public.png` });
+  await page.close();
+}
+{
+  // (5) phone: after the store, the next round starts at the top of the page
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  await page.goto(PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
+  await page.tap('#start');
+  await debug(page, async () => { await page.click('text=+1 life'); await page.click('text=+1 life'); await page.fill('#dbg-stage', '6'); await page.click('#dbg-jump'); await page.click('text=Skip to store'); });
+  check('phone: in the store', !!(await page.$('.screen.store')));
+  // (6) pinned wallet: scroll to the bottom; coins + lives stay on screen
+  const cont = await page.$('text=Continue'); await cont.scrollIntoViewIfNeeded(); await page.waitForTimeout(100);
+  const scrolled = await page.evaluate(() => scrollY);
+  const bar = await page.$eval('#wallet-bar', (el) => { const r = el.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, vis: getComputedStyle(el).display !== 'none', text: el.textContent }; });
+  check('phone store: wallet bar stays pinned at the top after scrolling down', scrolled > 400 && bar.vis && bar.top >= -1 && bar.bottom < 90, JSON.stringify({ scrolled, ...bar }));
+  const coins = await page.$eval('#wallet-coins', (e) => e.textContent.replace(/\D/g, ''));
+  const lifeBtn = await page.$('#buy-life:not([disabled])');
+  if (lifeBtn) {
+    await lifeBtn.scrollIntoViewIfNeeded(); await lifeBtn.tap(); await page.waitForTimeout(150);
+    const after = await page.$eval('#wallet-coins', (e) => e.textContent.replace(/\D/g, ''));
+    const barTop = await page.$eval('#wallet-bar', (el) => el.getBoundingClientRect().top);
+    check('phone store: pinned wallet updates after a purchase while scrolled', Number(after) < Number(coins) && barTop >= -1 && barTop < 40, `${coins}→${after}`);
+  }
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r6-store-pinned-390.png` });
+  await (await page.$('text=Continue')).scrollIntoViewIfNeeded();
+  await page.tap('text=Continue'); await page.waitForTimeout(250);
+  check('phone: next round starts scrolled to the top (was: stuck at the build panel)', (await page.evaluate(() => scrollY)) === 0 && !!(await page.$('#throw-R')));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r6-after-store-390.png` });
+  await ctx.close();
+  // desktop store: the head shows the wallet, no extra bar
+  const dp = await open(1366, 768);
+  await dp.keyboard.press('Enter');
+  await debug(dp, async () => { await dp.click('text=Skip to store'); });
+  check('desktop store: wallet in the header, pinned bar hidden', await dp.$eval('#wallet-bar', (e) => getComputedStyle(e).display === 'none') && await dp.$eval('.store-head .wallet', (e) => getComputedStyle(e).display !== 'none'));
+  await dp.close();
+}
+{
+  // New feature: Opponents Defeated collection
+  const page = await open(1366, 768);
+  check('collection: collapsed by default, 0 of 20', !(await page.$eval('#foes', (d) => d.open)) && (await page.textContent('#foes-count')).startsWith('0 of 20'));
+  await page.click('#foes > summary');
+  check('collection: opens; all 20 are mystery tiles at first', (await page.$$('.foe-unknown .foe-mystery')).length === 20 && (await page.$$('.foe .asset-img')).length === 0);
+  await page.keyboard.press('Enter');
+  const first = await page.evaluate(() => JSON.parse(localStorage.getItem('rps-roguelite.save.v1') ?? localStorage.getItem(Object.keys(localStorage).find((k) => k.includes('save')) ?? '') ?? 'null')?.opponentId ?? null);
+  await debug(page, async () => { await page.click('text=WIN if you throw R'); });
+  await page.keyboard.press('r'); await page.waitForTimeout(200); // gap 1: this win reaches the store
+  check('collection: first defeat shows a toast', /New in your collection: .+ defeated/.test((await page.textContent('.toast').catch(() => '')) ?? ''));
+  await page.click('#go-store').catch(() => {});
+  await page.keyboard.press('Enter'); await page.waitForTimeout(150); // leave store → next opponent
+  await page.keyboard.press('r'); await page.waitForTimeout(150);   // play one round vs opponent #2 (met)
+  await page.evaluate(() => { location.hash = ''; });
+  await page.reload();
+  const states = await page.$$eval('.foe', (els) => els.map((e) => e.className.match(/foe-(unknown|met|defeated)/)[1]));
+  const count = (k) => states.filter((x) => x === k).length;
+  check('collection: one defeated, one met (not yet defeated), the rest unknown', count('defeated') === 1 && count('met') === 1 && count('unknown') === 18, `${count('defeated')}/${count('met')}/${count('unknown')}`);
+  check('collection: remembered open after reload', await page.$eval('#foes', (d) => d.open));
+  check('collection: defeated card is crossed off and stamped', !!(await page.$('.foe-defeated .foe-stamp')) && await page.$eval('.foe-defeated .foe-name', (e) => getComputedStyle(e).textDecorationLine.includes('line-through')));
+  check('collection: met card shows portrait and “Not yet defeated”', (await imgsLoaded(page, '.foe-met img.asset-img')) === 1 && (await page.textContent('.foe-met .foe-state')) === 'Not yet defeated');
+  check('collection: count updates', (await page.textContent('#foes-count')).startsWith('1 of 20 defeated · 2 met'));
+  void first;
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r6-collection-1366.png`, fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(100);
+  check('collection: no horizontal scroll on a phone', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  if (SHOTS) { await (await page.$('#foes')).scrollIntoViewIfNeeded(); await page.screenshot({ path: `${SHOTS}/r6-collection-390.png` }); }
   await page.close();
 }
 

@@ -11,29 +11,29 @@ Picked from 3000 optimizer runs: a bad run, an average run, a good run, an excel
 
 ## Average run (median): 23 rounds, 5 stores
 
-- Died: Pete’s Rock beat your Scissors on round 23. You were 9 rounds short of store #6.
-- Build (11): Do Your Research, Thick Skull, Go For It, Predictive Analytics, Confirmation Bias, Dig In, Notes App, Risky Business, Death Wish, Bedrock, Big Rock Theory
-- Lives bought 0, used 2. Saves 0. Coins earned 324.
-- Stage by stage (rounds / raw losses / saves): S0: 1/0/0 · S1: 2/0/0 · S2: 3/0/0 · S3: 5/1/0 · S4: 8/0/0 · S5: 4/2/0
+- Died: Olga’s Paper beat your Rock on round 23. You were 9 rounds short of store #6.
+- Build (14): Do Your Research, Study Session, Brute Force, Thick Skull, Death Wish, Confirmation Bias, Risky Business, Go For It, Just One More, Paper Trail, Stone Cold, Agree to Disagree
+- Lives bought 1, used 3. Saves 0. Coins earned 406.
+- Stage by stage (rounds / raw losses / saves): S0: 1/0/0 · S1: 2/0/0 · S2: 3/0/0 · S3: 5/0/0 · S4: 8/2/0 · S5: 4/2/0
 
-## Good run (90th percentile): 91 rounds, 8 stores
+## Good run (90th percentile): 93 rounds, 8 stores
 
-- Died: Felix’s Rock beat your Scissors on round 91. You were 51 rounds short of store #9.
-- Build (29): Do Your Research, Momentum, Risky Business, Study Session, Close Shave, Dig In, Brute Force, Agree to Disagree, Just One More, Snip Snip, Go For It, Rocks Are Heavy, Muscle Memory, Compound Interest, Peer Review, Death Wish, Sharpening Stone, Big Rock Theory, High Stakes, Maximum Effort, Paper Trail, This Seems Fine, Hush Money, Double or Nothing
-- Lives bought 5, used 7. Saves 4. Coins earned 3463.
-- Stage by stage (rounds / raw losses / saves): S0: 1/0/0 · S1: 2/1/0 · S2: 3/0/0 · S3: 5/1/0 · S4: 8/1/0 · S5: 13/1/0 · S6: 21/2/1 · S7: 34/4/3 · S8: 4/2/0
+- Died: Felix’s Paper beat your Rock on round 93. You were 49 rounds short of store #9.
+- Build (23): Do Your Research, Risky Business, Thick Skull, Go For It, Spreadsheet, Dig In, Death Wish, I Have Sources, Muscle Memory, Actually I Read the Instructions, Due Diligence, Hush Money, Snip Snip, Five-Year Plan, Compound Interest, This Seems Fine, Rocks Are Heavy, Study Session, No Safety Net, Stone Cold, Standoff
+- Lives bought 4, used 6. Saves 6. Coins earned 2508.
+- Stage by stage (rounds / raw losses / saves): S0: 1/0/0 · S1: 2/0/0 · S2: 3/0/0 · S3: 5/0/0 · S4: 8/2/0 · S5: 13/0/0 · S6: 21/2/1 · S7: 34/6/4 · S8: 6/3/1
 
-## Excellent run (99th percentile): 368 rounds, 10 stores
+## Excellent run (99th percentile): 345 rounds, 10 stores
 
-- Died: Olga’s Scissors beat your Paper on round 368. You were 7 rounds short of store #11.
-- Build (35): Do Your Research, Brute Force, Snip Snip, Muscle Memory, Thick Skull, Study Session, Paper Trail, Agree to Disagree, Momentum, Sharpening Stone, Monolith, Stone Cold, Just One More, Insurance Fraud, Compound Interest, Hush Money, Big Rock Theory, This Seems Fine, Mastermind, Rock Bottom, Double or Nothing, No Safety Net, Go For It, Notes App, Standoff, Risky Business, Dig In, Actually I Read the Instructions
-- Lives bought 6, used 8. Saves 39. Coins earned 29975.
-- Stage by stage (rounds / raw losses / saves): S0: 1/0/0 · S1: 2/0/0 · S2: 3/0/0 · S3: 5/0/0 · S4: 8/0/0 · S5: 13/3/1 · S6: 21/4/4 · S7: 34/11/8 · S8: 55/11/10 · S9: 89/10/5 · S10: 137/14/11
+- Died: Kai’s Paper beat your Rock on round 345. You were 30 rounds short of store #11.
+- Build (37): Do Your Research, Brute Force, Just One More, Dig In, Notes App, Momentum, Thick Skull, Agree to Disagree, Study Session, Risky Business, Five-Year Plan, Rocks Are Heavy, Muscle Memory, Actually I Read the Instructions, This Seems Fine, Hush Money, Death Wish, Mastermind, Go For It, Confirmation Bias, Big Rock Theory, Double or Nothing, Paper Trail, Stone Cold, Cold Read, Predictive Analytics, Sharpening Stone, Bedrock, Contingency Plan, Geological Advantage, Rock Bottom, High Stakes
+- Lives bought 8, used 10. Saves 18. Coins earned 20161.
+- Stage by stage (rounds / raw losses / saves): S0: 1/0/0 · S1: 2/0/0 · S2: 3/0/0 · S3: 5/0/0 · S4: 8/1/0 · S5: 13/2/0 · S6: 21/0/0 · S7: 34/4/0 · S8: 55/8/5 · S9: 89/8/6 · S10: 114/10/7
 
-## Longest run of 3000: 1314 rounds, 13 stores
+## Longest run of 3000: 1212 rounds, 13 stores
 
-- Died: Sigrid’s Scissors beat your Paper on round 1314. You were 281 rounds short of store #14.
-- Build (49): Do Your Research, Muscle Memory, Agree to Disagree, Study Session, Risky Business, Go For It, Momentum, Thick Skull, Snip Snip, Geological Advantage, Stone Cold, Big Rock Theory, Predictive Analytics, Rock Bottom, This Seems Fine, Due Diligence, Notes App, Double or Nothing, Monolith, Death Wish, Compound Interest, Peer Review, I Have Sources, Maximum Effort, Hush Money, Insurance Fraud, Mastermind, Cold Read, Rocks Are Heavy, Dig In, Contingency Plan, Paper Trail, Standoff, Actually I Read the Instructions, Sharpening Stone, Spreadsheet, Bedrock, Cut Corners, Built Different, Brute Force, YOLO
-- Lives bought 11, used 13. Saves 106. Coins earned 144377.
-- Stage by stage (rounds / raw losses / saves): S0: 1/0/0 · S1: 2/0/0 · S2: 3/0/0 · S3: 5/0/0 · S4: 8/1/1 · S5: 13/2/1 · S6: 21/4/2 · S7: 34/7/6 · S8: 55/3/3 · S9: 89/13/10 · S10: 144/15/12 · S11: 233/16/12 · S12: 377/29/26 · S13: 329/36/33
+- Died: Lou’s Paper beat your Rock on round 1212. You were 383 rounds short of store #14.
+- Build (43): Do Your Research, Study Session, Muscle Memory, Brute Force, Predictive Analytics, Go For It, Thick Skull, Rock Collection, Hush Money, Notes App, Cold Read, Spreadsheet, Death Wish, Just One More, Monolith, Agree to Disagree, Five-Year Plan, Sharpening Stone, Momentum, Geological Advantage, No Safety Net, Dig In, Mastermind, Actually I Read the Instructions, I Have Sources, Paper Trail, Standoff, This Seems Fine, Due Diligence, Risky Business, YOLO, Absolute Unit, Close Shave, Rock Bottom, Bedrock, Maximum Effort, Contingency Plan, Double or Nothing, Peer Review
+- Lives bought 9, used 11. Saves 75. Coins earned 127173.
+- Stage by stage (rounds / raw losses / saves): S0: 1/1/0 · S1: 2/0/0 · S2: 3/0/0 · S3: 5/0/0 · S4: 8/1/0 · S5: 13/0/0 · S6: 21/1/0 · S7: 34/4/2 · S8: 55/5/4 · S9: 89/5/4 · S10: 144/10/9 · S11: 233/24/22 · S12: 377/25/22 · S13: 227/14/12
 

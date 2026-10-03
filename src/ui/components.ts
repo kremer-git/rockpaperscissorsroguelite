@@ -6,7 +6,6 @@ import { MOVE_NAME } from '../core/rps';
 import type { IntelView } from '../core/intel';
 import { getUpgrade } from '../core/registry';
 import type { App } from './app';
-import { orderIds, reorder } from './prefs';
 
 export const RARITY_LABEL: Record<string, string> = {
   common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary',
@@ -196,24 +195,18 @@ const TREES: Tree[] = ['rock', 'paper', 'scissors'];
 
 /**
  * The player's build, grouped by tree. With `app` it becomes interactive:
- * collapsible trees, drag (or ▲▼) to reorder within a tree, remembered
+ * collapsible trees, remembered
  * expanded items, and on/off switches for the Hunch and Cold Read read-outs.
  */
 export function buildPanel(s: GameState, app?: App): HTMLElement {
   if (!s.owned.length) return h('p', { class: 'muted small' }, 'No upgrades yet. Your build is “vibes”.');
   const prefs = app?.prefs;
   const sections = TREES.map((t) => {
-    const ids = orderIds(s.owned.filter((u) => getUpgrade(u.id).tree === t).map((u) => u.id), prefs?.order[t] ?? []);
+    // Purchase order within each tree (the player-sortable order was removed: it wasn't worth the clutter).
+    const ids = s.owned.filter((u) => getUpgrade(u.id).tree === t).map((u) => u.id);
     if (!ids.length) return null;
     const collapsed = !!prefs?.treeCollapsed[t];
-    const move = (id: string, dir: -1 | 1) => app!.actions.setPrefs((p) => {
-      const cur = orderIds(ids, p.order[t]);
-      const i = cur.indexOf(id);
-      const j = i + dir;
-      if (j < 0 || j >= cur.length) return;
-      p.order[t] = dir < 0 ? reorder(cur, id, cur[j]) : reorder(cur, id, cur[j + 1] ?? null);
-    });
-    const items = ids.map((id, i) => {
+    const items = ids.map((id) => {
       const u = s.owned.find((x) => x.id === id)!;
       const d = getUpgrade(id);
       const sc = d.scaling ? h('span', { class: 'scaling num' }, `${d.scaling.label}: ${d.scaling.value(s, u)}`) : null;
@@ -232,23 +225,7 @@ export function buildPanel(s: GameState, app?: App): HTMLElement {
           h('span', { class: 'build-name' }, d.name, d.maxStacks > 1 ? h('span', { class: 'stacks' }, ` (${u.stacks} of ${d.maxStacks})`) : null),
           h('span', { class: `pip-dot rarity-${d.rarity}`, 'aria-label': d.rarity }, '◆'.repeat(RARITY_PIPS[d.rarity]))),
         h('span', { class: 'build-desc small' }, d.describe(u.stacks)));
-      const li = h('li', {
-        class: `build-item tree-${d.tree}`, 'data-id': id, 'data-tree': t,
-        draggable: app ? 'true' : undefined,
-        ondragstart: app ? (e: DragEvent) => { e.dataTransfer?.setData('text/plain', `${t}:${id}`); (e.currentTarget as HTMLElement).classList.add('dragging'); } : undefined,
-        ondragend: app ? (e: DragEvent) => (e.currentTarget as HTMLElement).classList.remove('dragging') : undefined,
-        ondragover: app ? (e: DragEvent) => { e.preventDefault(); (e.currentTarget as HTMLElement).classList.add('drop-target'); } : undefined,
-        ondragleave: app ? (e: DragEvent) => (e.currentTarget as HTMLElement).classList.remove('drop-target') : undefined,
-        ondrop: app ? (e: DragEvent) => {
-          e.preventDefault();
-          const [ft, fid] = (e.dataTransfer?.getData('text/plain') ?? '').split(':');
-          if (ft !== t || !fid || fid === id) return; // reordering stays within a tree
-          app.actions.setPrefs((p) => { p.order[t] = reorder(orderIds(ids, p.order[t]), fid, id); });
-        } : undefined,
-      }, details, sc, toggle,
-        app ? h('span', { class: 'reorder' },
-          h('button', { class: 'mini', type: 'button', disabled: i === 0, 'aria-label': `Move ${d.name} up`, onclick: () => move(id, -1) }, '▲'),
-          h('button', { class: 'mini', type: 'button', disabled: i === ids.length - 1, 'aria-label': `Move ${d.name} down`, onclick: () => move(id, 1) }, '▼')) : null);
+      const li = h('li', { class: `build-item tree-${d.tree}`, 'data-id': id, 'data-tree': t }, details, sc, toggle);
       return li;
     });
     const head = app
@@ -258,7 +235,7 @@ export function buildPanel(s: GameState, app?: App): HTMLElement {
     return h('section', { class: 'tree-group' }, head, collapsed ? null : h('ul', null, items));
   });
   return h('div', { class: 'build' },
-    h('p', { class: 'small muted' }, app ? 'Click an upgrade for details. Drag, or use ▲▼, to reorder.' : 'Click an upgrade for details.'),
+    h('p', { class: 'small muted' }, 'Click an upgrade for details.'),
     sections);
 }
 

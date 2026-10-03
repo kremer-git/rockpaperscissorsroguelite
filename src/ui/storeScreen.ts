@@ -85,6 +85,11 @@ export function storeScreen(app: App): HTMLElement {
       h('div', { class: 'wallet' },
         h('span', { class: 'hud-num num' }, asset('ui.coin', 'hud-glyph'), fmt(s.currency)),
         h('span', { class: 'hud-num num' }, asset('ui.life', 'hud-glyph'), String(s.lives)))),
+    // Phones and narrow windows: the page scrolls, so a slim wallet bar stays pinned to the top of the screen.
+    h('div', { class: 'wallet-bar', id: 'wallet-bar', role: 'status', 'aria-label': `You have ${s.currency} coins and ${s.lives} Extra Lives` },
+      h('span', { class: 'eyebrow' }, 'You have'),
+      h('span', { class: 'hud-num num', id: 'wallet-coins' }, asset('ui.coin', 'hud-glyph'), fmt(s.currency)),
+      h('span', { class: 'hud-num num', id: 'wallet-lives' }, asset('ui.life', 'hud-glyph'), String(s.lives))),
     h('section', { class: 'offers' }, offers.length ? offers : h('p', null, 'You own everything. The shopkeeper is visibly concerned.')),
     services,
     h('details', { class: 'panel store-build' }, h('summary', null, `Your build (${s.owned.length})`), buildPanel(s, app)));

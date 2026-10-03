@@ -1,4 +1,6 @@
 import type { App } from './app';
+
+declare const __DEBUG__: boolean;
 import { h, fmt } from './dom';
 import { asset } from './assets';
 import { buildPanel, moveChip } from './components';
@@ -7,7 +9,7 @@ import { MOVE_NAME } from '../core/rps';
 import { parseSeed } from './seed';
 import { UPGRADES } from '../core/registry';
 import { OPPONENTS } from '../content/opponents';
-import { AWARDS } from './awards';
+import { AWARDS, foeStatus, type Progress } from './awards';
 
 function copyText(app: App, text: string, id: string): void {
   const done = () => app.actions.notify('Seed copied.');
@@ -33,14 +35,15 @@ export function titleScreen(app: App): HTMLElement {
   const p = app.progress;
   const shelf = h('section', { class: 'shelf', 'aria-label': 'Awards' },
     h('div', { class: 'shelf-head' }, h('span', { class: 'eyebrow' }, 'Trophy shelf'),
-      h('span', { class: 'small muted num' }, p.best ? `Best run: ${fmt(p.best)} rounds${p.bestHard ? ` · Hard: ${fmt(p.bestHard)}` : ''} · ${fmt(p.runs)} run${p.runs === 1 ? '' : 's'}` : 'No runs yet. The shelf is judging you.')),
+      h('span', { class: 'small muted num' }, p.best ? `Best run: ${fmt(p.best)} round${p.best === 1 ? '' : 's'}${p.bestHard ? ` · Hard: ${fmt(p.bestHard)}` : ''} · ${fmt(p.runs)} run${p.runs === 1 ? '' : 's'}` : 'No runs yet. The shelf is judging you.')),
     h('ol', { class: 'medals' }, AWARDS.map((a, i) => {
       const u = p.unlocked[String(a.rounds)];
       return h('li', { class: `medal ${u ? 'won' : 'locked'} tier-${i + 1}`, title: u ? `${a.blurb}${u.at ? ` Earned ${u.at.slice(0, 10)}.` : ''}` : `Reach round ${a.rounds} in one run.` },
-        h('span', { class: 'medal-disc', 'aria-hidden': 'true' }, String(a.rounds)),
+        h('span', { class: 'medal-art', 'aria-hidden': 'true' }, asset(`award.${a.rounds}`, 'medal-img')),
         h('span', { class: 'medal-name' }, u ? a.name : '???'),
         u?.hard ? h('span', { class: 'hard-tag small' }, 'HARD') : h('span', { class: 'small muted' }, u ? 'Unlocked' : `Round ${a.rounds}`));
     })));
+  const collection = foesCollection(app, p);
   return h('div', { class: 'screen title' },
     h('div', { class: 'title-block' },
       h('div', { class: 'title-hands', 'aria-hidden': 'true' }, moveChip('R', 'huge'), moveChip('P', 'huge'), moveChip('S', 'huge')),
@@ -56,15 +59,37 @@ export function titleScreen(app: App): HTMLElement {
       h('span', null, h('b', null, 'Hard Mode'), hard ? ': start with 0 Extra Lives. Good luck.' : ': start with 0 Extra Lives instead of 2.'), h('kbd', null, 'M')),
     h('form', { class: 'seed-form', onsubmit: (e: Event) => { e.preventDefault(); startSeeded(); } },
       h('label', { for: 'seed-input', class: 'small muted' }, 'Play a specific seed'),
-      h('input', { id: 'seed-input', type: 'text', inputmode: 'text', autocomplete: 'off', placeholder: 'e.g. 12345 or “hank”', maxlength: '40', class: 'seed-input' }),
+      h('input', { id: 'seed-input', type: 'text', inputmode: 'text', autocomplete: 'off', placeholder: 'e.g. 12345 or “lizard spock”', maxlength: '40', class: 'seed-input' }),
       h('button', { class: 'btn', id: 'start-seed', type: 'submit' }, 'Start seeded run')),
     h('p', { class: 'small muted seed-help' }, 'Same seed + same choices = the same run, so you can share a run or replay one.'),
     shelf,
+    collection,
     h('ul', { class: 'title-facts small' },
       h('li', null, `${UPGRADES.length} upgrades across three skill trees`),
       h('li', null, `${OPPONENTS.length} opponents with learnable habits`),
       h('li', null, '0 meta-progression. Trophies are just for bragging.')),
-    h('p', { class: 'small muted foot' }, 'Press ` for debug mode.'));
+    __DEBUG__ && app.debugEnabled ? h('p', { class: 'small muted foot' }, 'Press ` for debug mode.') : null);
+}
+
+/** Title screen: "Opponents Defeated" collection. Unknown opponents are a mystery tile; met-but-unbeaten ones are
+ *  shown and marked as still to beat; beaten ones are crossed off. Collapsed by default, remembered in prefs. */
+function foesCollection(app: App, p: Progress): HTMLElement {
+  const statuses = OPPONENTS.map((o) => ({ o, st: foeStatus(p, o.id) }));
+  const beaten = statuses.filter((x) => x.st === 'defeated').length;
+  const met = statuses.filter((x) => x.st !== 'unknown').length;
+  const cards = statuses.map(({ o, st }) => h('li', { class: `foe foe-${st}`, 'data-foe': o.id,
+    title: st === 'unknown' ? 'Not met yet.' : st === 'met' ? `${o.name}, ${o.title}. Survive a whole stretch against them to cross them off.` : `${o.name}, ${o.title}. Defeated ${p.foes[o.id].beaten}×.` },
+    st === 'unknown'
+      ? h('span', { class: 'foe-pic foe-mystery', 'aria-hidden': 'true' }, '?')
+      : h('span', { class: 'foe-pic portrait' }, asset(o.portrait, 'portrait-glyph'), st === 'defeated' ? h('span', { class: 'foe-stamp', 'aria-hidden': 'true' }, 'Defeated') : null),
+    h('span', { class: 'foe-name' }, st === 'unknown' ? '???' : o.name),
+    h('span', { class: 'foe-state small' }, st === 'unknown' ? 'Not met yet' : st === 'met' ? 'Not yet defeated' : 'Defeated')));
+  return h('details', { class: 'shelf foes', id: 'foes', open: app.prefs.collectionOpen,
+    ontoggle: (e: Event) => { const open = (e.target as HTMLDetailsElement).open; if (open !== app.prefs.collectionOpen) app.actions.setPrefs((q) => { q.collectionOpen = open; }); } },
+    h('summary', { class: 'shelf-head' }, h('span', { class: 'eyebrow' }, 'Opponents defeated'),
+      h('span', { class: 'small muted num', id: 'foes-count' }, `${beaten} of ${OPPONENTS.length} defeated · ${met} met`)),
+    h('p', { class: 'small muted foes-help' }, 'Beat an opponent by surviving a whole stretch against them and reaching the store.'),
+    h('ol', { class: 'foe-grid' }, cards));
 }
 
 const STEPS: [string, string][] = [
@@ -72,7 +97,7 @@ const STEPS: [string, string][] = [
   ['Win for coins', 'A win pays 12 coins. A tie pays 5 and the run continues. After each result the buttons light up again: keep throwing until the store.'],
   ['Losing ends the run', 'Unless you own an Extra Life, which is used up instead. You start with 2 (0 in Hard Mode).'],
   ['Shop at stores', 'Stores sell upgrades, Extra Lives, rerolls of the offers, and a swap of your next opponent. You always see who’s next before you leave.'],
-  ['New opponent, fresh memory', 'Each store brings a new opponent who knows nothing about you. When a tendency mentions “your previous throw” or “two rounds ago”, it only counts rounds against that opponent, so their first throw after a store reacts to nothing. Your own streak upgrades (Muscle Memory, Momentum…) do carry over.'],
+  ['New opponent, fresh memory', 'Each store brings a new opponent who knows nothing about you. Tendencies are habits, not rules: every opponent can surprise you now and then. When a tendency mentions “your previous throw” or “two rounds ago”, it only counts rounds against that opponent, so their first throw after a store reacts to nothing. Your own streak upgrades (Muscle Memory, Momentum…) do carry over.'],
   ['Build something', 'Rock makes Rock safer and rewards stubbornness. Paper reads the opponent: tendencies, hunches, leaks. Scissors turns risk into money. Mix freely.'],
   ['The gaps grow', 'Stores come after 1, 2, 3, 5, 8, 13, 21, 34, 55, 89… rounds. There is no cap and no final boss. There is only the next gap.'],
   ['Nothing is rigged', 'Opponents never look at how long you’ve survived, how rich you are or how strong your build is. Their odds depend only on the history you can see. Everyone appears once before anyone repeats. Your build gets strong; the gaps get longer; eventually probability wins. One more run?'],

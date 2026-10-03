@@ -39,13 +39,13 @@
 ## Lenny — “Has Had the Same Song Stuck in His Head Since 2009”
 
 - **Archetype:** The Loop · **tier:** medium (from stage 4)
-- **Tendency text:** Plays one short sequence (3 or 4 throws) over and over, like R, R, P, S, R, R, P, S… He picks a new sequence each time you meet, and it restarts after every store.
+- **Tendency text:** Usually repeats a short sequence (3 or 4 throws), like R, R, P, S… but sometimes slips. New sequence each time you meet; it restarts after every store.
 - **Model:** base R/P/S 1/1/1, randomness floor 0.06; repeats a short sequence (new one each encounter) (loop={"weight":5,"minLen":3,"maxLen":4})
 
 ## Sal — “Knocks on Wood. Twice.”
 
 - **Archetype:** The Superstitious · **tier:** medium (from stage 4)
-- **Tendency text:** Never repeats a throw that just lost: that throw is cursed now. Keeps a throw that just won. After a tie, moves on to the next throw (Rock → Paper → Scissors).
+- **Tendency text:** Never repeats a throw that just lost: it’s cursed. Tends to keep a throw that just won. After a tie, tends to move on to the next throw (Rock → Paper → Scissors).
 - **Model:** base R/P/S 1/1/1, randomness floor 0.08; throws what beats its own last throw (cycle=2); after winning, repeats (winStay=2.5); never repeats a throw that just lost (multiplier) (avoidLoser=0)
 
 ## Connor — “Always Has a Rebuttal”
@@ -57,13 +57,13 @@
 ## Pete — “Never Leaves a Winning Table”
 
 - **Archetype:** Hot Hand · **tier:** medium (from stage 4)
-- **Tendency text:** After winning, repeats its throw. After losing, switches to whatever would have beaten you. After a tie, leans toward repeating.
+- **Tendency text:** After winning, tends to repeat its throw. After losing, tends to switch to whatever would have beaten you. After a tie, leans toward repeating.
 - **Model:** base R/P/S 1/1/1, randomness floor 0.05; repeats its own last throw (repeatOwn=1.2); after winning, repeats (winStay=4); after losing, switches to what would have won (loseShift=4)
 
 ## Olga — “Suspicious of Good News”
 
 - **Archetype:** Cold Hand · **tier:** medium (from stage 4)
-- **Tendency text:** After winning, switches to the next move in the cycle (Rock → Paper → Scissors). After losing, stubbornly repeats. After a tie, leans toward the next move in the cycle.
+- **Tendency text:** After winning, tends to switch to the next move in the cycle (Rock → Paper → Scissors). After losing, tends to stubbornly repeat. After a tie, leans toward the next move.
 - **Model:** base R/P/S 1/1/1, randomness floor 0.05; throws what beats its own last throw (cycle=1.2); after winning, moves on in the cycle (winShift=4); after losing, repeats (loseStay=4)
 
 ## Carl — “Eats His Skittles by Color”
@@ -81,7 +81,7 @@
 ## Sigrid — “Takes Notes at Dinner”
 
 - **Archetype:** The Psychologist · **tier:** hard (from stage 5)
-- **Tendency text:** Watches your last 6 throws and counters your most common one. The more lopsided your habits, the harder it commits.
+- **Tendency text:** Watches your last 6 throws and tends to counter your most common one. The more lopsided your habits, the harder it commits.
 - **Model:** base R/P/S 1/1/1, randomness floor 0.06; beats your most common recent throw (counterPlayerFreq={"weight":4,"window":6})
 
 ## Miranda — “Laughs a Beat Late”
@@ -99,13 +99,13 @@
 ## Moira — “Returned the Same Couch Twice”
 
 - **Archetype:** Mood Swings · **tier:** hard (from stage 5)
-- **Tendency text:** Switches mood every 5 rounds (the badge shows which). Stubborn: repeats her own last throw. Spiteful: throws whatever would have beaten YOUR last throw.
+- **Tendency text:** Switches mood every 5 rounds (shown above your throws). Stubborn: tends to repeat her own last throw. Spiteful: tends to throw whatever would have beaten YOUR last throw.
 - **Model:** base R/P/S 1/1/1, randomness floor 0.08; swaps between two behaviour sets every N rounds (moods={"period":5,"a":{"repeatOwn":3},"b":{"counterPlayerLast":3},"names":["Stubborn","Spiteful"]})
 
 ## Delphine — “Finishes Your Sentences”
 
 - **Archetype:** The Oracle · **tier:** elite (from stage 7)
-- **Tendency text:** Learns what you usually throw after your previous throw and counters it; also punishes favourite moves. Being unpredictable is the defence.
+- **Tendency text:** Learns what you usually throw after your previous throw and tends to counter it; also punishes favourite moves. Being unpredictable is the defence.
 - **Model:** base R/P/S 1/1/1, randomness floor 0.07; beats your most common recent throw (counterPlayerFreq={"weight":1.5,"window":10}); beats what you usually throw after your last throw (counterPlayerBigram=4)
 
 ## Felix — “Tells You Exactly What He’ll Do”

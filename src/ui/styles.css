@@ -402,11 +402,6 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .tree-head:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 .tree-group ul { margin-top: 6px; }
 .build-item { position: relative; }
-.build-item[draggable="true"] { cursor: grab; }
-.build-item.dragging { opacity: .45; }
-.build-item.drop-target { outline: 2px dashed var(--gold); outline-offset: 1px; }
-.reorder { position: absolute; right: 26px; top: 6px; display: none; gap: 2px; }
-.build-item:hover .reorder, .build-item:focus-within .reorder { display: inline-flex; }
 .mini { font: 700 .6rem/1 var(--f-mono); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; }
 .mini:disabled { opacity: .35; cursor: default; }
 .intel-toggle { display: flex; gap: 6px; align-items: center; color: var(--muted); cursor: pointer; }
@@ -473,3 +468,54 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .opp-head .portrait { width: 84px; height: 84px; border-radius: 14px; }
 .service .portrait.small { width: 56px; height: 56px; }
 @media (max-width: 760px) { .opp-head .portrait { width: 64px; height: 64px; border-radius: 12px; } }
+
+/* ---------- throw + trophy art ---------- */
+/* Throw pictures sit on a light card-coloured disc with a ring in the tree colour (grey rock on a grey disc would vanish). */
+.move-chip { background: #fbf8f0; border: 2px solid var(--tint, var(--rock)); overflow: hidden; }
+.move-chip .asset-img { width: 82%; height: 82%; object-fit: contain; display: block; }
+.move-chip.tiny { border-width: 1.5px; }
+.move-chip.big, .move-chip.huge { border-width: 3px; }
+.throw-art { background: #fbf8f0 !important; border: 4px solid var(--rock); overflow: hidden; }
+.throw.tree-paper .throw-art { border-color: var(--paper); } .throw.tree-scissors .throw-art { border-color: var(--scissors); }
+.throw-art .asset-img { width: 86%; height: 86%; object-fit: contain; display: block; }
+.medal-art { width: 64px; height: 64px; display: grid; place-items: center; }
+.medal-art .asset-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.35)); }
+.medal-art .asset:not(.asset-img) { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font: 900 1rem/1 var(--f-display); background: var(--panel); border: 2px dashed var(--line); }
+.medal.locked .medal-art .asset-img { filter: grayscale(1) brightness(.55); opacity: .35; }
+.medal.won .medal-art { animation: none; }
+
+/* ---------- store: pinned wallet on phones / narrow windows ---------- */
+.wallet-bar { display: none; }
+html:not(.fit) .wallet-bar { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 15; align-items: center; justify-content: center; gap: 22px;
+  margin: 10px -16px 0; padding: 8px 16px; background: rgba(16,36,30,.96); border-bottom: 1px solid var(--line); box-shadow: 0 6px 14px rgba(0,0,0,.35);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+html:not(.fit) .wallet-bar .hud-num { font-size: 1.6rem; }
+html:not(.fit) .store-head .wallet { display: none; }
+
+/* ---------- title: Opponents Defeated collection ---------- */
+.foes > summary { cursor: pointer; list-style: none; }
+.foes > summary::-webkit-details-marker { display: none; }
+.foes > summary .eyebrow::before { content: '▸ '; }
+.foes[open] > summary .eyebrow::before { content: '▾ '; }
+.foes-help { margin: 0; }
+.foe-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px; }
+.foe { display: grid; justify-items: center; gap: 3px; padding: 8px 4px; border-radius: 10px; background: var(--felt-deep); border: 1px solid var(--line); text-align: center; min-width: 0; }
+.foe-pic { position: relative; width: 56px; height: 56px; border-radius: 10px; }
+.foe-mystery { display: grid; place-items: center; font: 900 1.8rem/1 var(--f-display); color: var(--muted); background: repeating-linear-gradient(45deg, var(--panel), var(--panel) 6px, var(--felt-deep) 6px, var(--felt-deep) 12px); border: 2px dashed var(--line); }
+.foe-name { font-weight: 700; font-size: .8rem; line-height: 1.2; overflow-wrap: anywhere; }
+.foe-state { color: var(--muted); font-size: .68rem; line-height: 1.2; }
+.foe-unknown .foe-name { color: var(--muted); letter-spacing: .15em; }
+.foe-met .foe-state { color: var(--gold); }
+.foe-defeated .foe-name { text-decoration: line-through; text-decoration-thickness: 2px; text-decoration-color: var(--loss); color: var(--muted); }
+.foe-defeated .foe-state { color: var(--win); font-weight: 700; }
+.foe-defeated .foe-pic .asset-img { filter: saturate(.55) brightness(.8); }
+.foe-stamp { position: absolute; left: 50%; top: 56%; transform: translate(-50%, -50%) rotate(-16deg); font: 900 .56rem/1 var(--f-display); letter-spacing: .03em; text-transform: uppercase;
+  color: #fff; background: var(--loss); border-radius: 3px; padding: 2px 3px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+@media (max-width: 1100px) { .foe-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .foe-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .foe-pic { width: 48px; height: 48px; } }
+.fit .screen.title { gap: 9px; }
+.fit .title-hands .move-chip.huge { width: 3.6rem; height: 3.6rem; }
+.fit .logo { font-size: clamp(2.6rem, 7vh, 5.4rem); margin-top: 8px; }
+.fit .medal { padding: 6px 8px; gap: 2px; }
+.fit .medal-art { width: 52px; height: 52px; }
+.fit .tagline { margin-top: 8px; }

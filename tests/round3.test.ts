@@ -12,7 +12,7 @@ import { OPPONENTS } from '../src/content/opponents';
 import { CONFIG } from '../src/core/config';
 import { hunchShown, buttonOdds, visibleRuledOut, type ReadOpts } from '../src/ui/components';
 import { AWARDS, emptyProgress, mergeProgress, recordRounds } from '../src/ui/awards';
-import { orderIds, reorder } from '../src/ui/prefs';
+import { defaultPrefs } from '../src/ui/prefs';
 import type { GameState, Move } from '../src/core/types';
 
 const W = CONFIG.rewards.win;
@@ -282,13 +282,10 @@ test('award records merge as a union (local + cloud) without losing anything', (
   assert.deepEqual(mergeProgress(m, emptyProgress()), m);
 });
 
-// ---------------- Build panel ordering ----------------
+// ---------------- Build panel: no manual ordering any more ----------------
 
-test('build order: saved order first, new upgrades appended; reorder moves within a list', () => {
-  assert.deepEqual(orderIds(['a', 'b', 'c'], ['c', 'x', 'a']), ['c', 'a', 'b']);
-  assert.deepEqual(reorder(['a', 'b', 'c'], 'c', 'a'), ['c', 'a', 'b']);
-  assert.deepEqual(reorder(['a', 'b', 'c'], 'a', null), ['b', 'c', 'a']);
-  assert.deepEqual(reorder(['a', 'b', 'c'], 'b', 'b'), ['a', 'c', 'b']);
+test('build panel ordering was removed: prefs no longer carry an order', () => {
+  assert.ok(!('order' in defaultPrefs()));
 });
 
 // ---------------- Regression: nothing new broke the core loop ----------------

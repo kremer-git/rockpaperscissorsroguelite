@@ -7,12 +7,12 @@ export interface Prefs {
   hardMode: boolean;
   buildCollapsed: boolean;
   treeCollapsed: Record<Tree, boolean>;
-  /** Player-chosen order of upgrade ids within each tree. Unlisted ids follow in purchase order. */
-  order: Record<Tree, string[]>;
   /** Read-outs the player switched off. */
   hidden: { hunch: boolean; coldRead: boolean };
   /** Build items the player expanded for details. */
   expanded: string[];
+  /** Title screen: the Opponents Defeated collection is expanded. */
+  collectionOpen: boolean;
   /** Music / effects volume and mute. */
   audio: AudioSettings;
 }
@@ -24,9 +24,9 @@ export function defaultPrefs(): Prefs {
     hardMode: false,
     buildCollapsed: false,
     treeCollapsed: { rock: false, paper: false, scissors: false },
-    order: { rock: [], paper: [], scissors: [] },
     hidden: { hunch: false, coldRead: false },
     expanded: [],
+    collectionOpen: false,
     audio: { ...DEFAULT_AUDIO },
   };
 }
@@ -41,9 +41,9 @@ export function loadPrefs(): Prefs {
       hardMode: !!p.hardMode,
       buildCollapsed: !!p.buildCollapsed,
       treeCollapsed: { ...d.treeCollapsed, ...(p.treeCollapsed ?? {}) },
-      order: { ...d.order, ...(p.order ?? {}) },
       hidden: { ...d.hidden, ...(p.hidden ?? {}) },
       expanded: Array.isArray(p.expanded) ? p.expanded.filter((x) => typeof x === 'string') : [],
+      collectionOpen: !!p.collectionOpen,
       audio: { ...d.audio, ...(p.audio && typeof p.audio === 'object' ? p.audio : {}) },
     };
   } catch { return d; }
@@ -51,18 +51,4 @@ export function loadPrefs(): Prefs {
 
 export function savePrefs(p: Prefs): void {
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* storage unavailable */ }
-}
-
-/** Sort owned ids by the player's saved order; anything new keeps purchase order at the end. */
-export function orderIds(ids: string[], saved: string[]): string[] {
-  const known = saved.filter((id) => ids.includes(id));
-  return [...known, ...ids.filter((id) => !known.includes(id))];
-}
-
-/** Move `id` to sit before `beforeId` (or to the end when null) in a tree's order. */
-export function reorder(current: string[], id: string, beforeId: string | null): string[] {
-  const rest = current.filter((x) => x !== id);
-  const i = beforeId ? rest.indexOf(beforeId) : -1;
-  if (i < 0) return [...rest, id];
-  return [...rest.slice(0, i), id, ...rest.slice(i)];
 }

@@ -27,7 +27,7 @@ npm run sim          # all balance reports -> reports/*.md  (~5 min at the defau
 | Run | `R` `P` `S` throw · `A` toggle ALL-IN (with Double or Nothing) · `Enter` continue to store / summary |
 | Store | `1`–`4` buy offer · `L` Extra Life · `X` reroll store · `O` reroll next opponent · `Enter` continue |
 | Game over | `Enter` one more run · `Y` replay this seed · `T` title |
-| Anywhere | `` ` `` debug panel |
+| Anywhere (test/dev build only) | `` ` `` debug panel |
 
 Mouse and touch work everywhere. Every state is also communicated in text, not only colour.
 
@@ -130,6 +130,7 @@ Policies: Random, Baseline, Rock-, Paper-, Scissors-focused, Tie Economy, Greedy
 ## Adding art, audio and animation later
 
 - **Art:** every visual slot asks `assets.ts` for a key (`move.R`, `opp.oracle`, `up.skull`, `store.sign`, `ui.life`, …). Add `image: 'url or data URI'` to a key (or call `registerAsset`) and the placeholder glyph becomes an `<img>` everywhere. No screen changes.
+- **Throw and trophy art:** `assets/art/move-{R,P,S}.webp` and `award-{100..500}.webp` (256×256, transparent) come from the Drive originals via `python3 scripts/art.py <folder>`, which cuts out the cream background, trims and compresses them (8–15 KB each). Throws sit on a light disc ringed in the tree colour; the build copies them to `dist/art/`.
 - **Opponent portraits:** all 20 opponents have illustrated portraits in `assets/portraits/<opponent id>.jpg` (256×256, face-cropped). The build copies them to `dist/portraits/`. They come from 1024×1024 originals cropped by `python3 scripts/portraits.py <folder of Name.jpg originals>`, where the crop box per face is a single line to tweak. If a file is missing, that opponent falls back to the initials tile. `tests/portraits.test.ts` checks that every opponent has exactly one 256×256 portrait, and the browser tests check that every portrait loads on the run, store and game-over screens.
 - **Audio:** `presentation.ts` maps engine events to sound keys (`choice`, `reveal`, `win`, `tie`, `loss`, `save`, `life`, `store`, `purchase`, `milestone`). Call `registerSound('win', () => …)`.
 - **Animation:** elements carry `data-fx` targets (`clash`, `banner`, `coins`, `lives`, `build`); queued engine events add CSS classes after render. Swap in richer animation without touching rules; the engine never waits on it. `prefers-reduced-motion` disables all of it.
@@ -138,8 +139,10 @@ Policies: Random, Baseline, Rock-, Paper-, Scissors-focused, Tie Economy, Greedy
 ## Hard Mode, awards and layout
 
 - **Hard Mode** (title screen toggle, key `M`) starts with 0 Extra Lives. Stored in `GameState.mode`; seeds replay in the same mode.
-- **Awards** at 100/200/300/400/500 rounds live on the title-screen trophy shelf (`src/ui/awards.ts`). They're saved in browser storage and, on claude.ai for a signed-in viewer, in their private `db` record (`data/users/<id>/awards`), merged as a union so nothing is lost. They grant no power.
-- **Build panel**: collapse it (`B` or the Hide button), collapse each tree, and reorder upgrades by drag or ▲▼. Intel read-outs (Hunch, Cold Read) have on/off switches. All remembered per browser (`src/ui/prefs.ts`).
+- **Awards** at 100/200/300/400/500 rounds live on the title-screen trophy shelf (`src/ui/awards.ts`), each with its own trophy picture. Locked trophies show as dark silhouettes. They're saved in browser storage and, on claude.ai for a signed-in viewer, in their private `db` record (`data/users/<id>/awards`), merged as a union so nothing is lost. They grant no power.
+- **Opponents Defeated** is a collapsible collection under the trophy shelf. An opponent you've never played is a `?` tile. One you've played but not beaten shows their portrait as *Not yet defeated*. Survive a whole stretch against them and reach the store, and they're crossed off as *Defeated* (with a toast the first time). It's stored with the awards (`foes` in the same record) and merged the same way, keeping the higher counts.
+- **Build panel**: collapse it (`B` or the Hide button) or collapse each tree; upgrades are listed in purchase order. Intel read-outs (Hunch, Cold Read) have on/off switches. All remembered per browser (`src/ui/prefs.ts`).
+- **Phones**: the store pins a slim *You have ¢ · ♥* bar to the top while you scroll, and every new screen starts at the top of the page.
 
 ## Seeds
 
@@ -159,5 +162,8 @@ The title screen can start a run from a seed (a number, or any word, which is ha
 No Thoughts Just Rock hides all of it, so the store never offers it together with intel upgrades.
 
 ## Debug mode
+
+The published game (`dist/`, GitHub Pages, claude.ai) has **no** debug mode: `scripts/build.mjs` compiles it out (`__DEBUG__ = false`). The test build at `.e2e/index.html` (made by the same command, git-ignored) and `node scripts/build.mjs --dev` include it.
+
 
 Press `` ` ``: add coins/lives, add or remove any upgrade, set the current opponent, reroll the next one for free, force the opponent's next throw or a WIN/TIE/LOSS, skip N rounds, skip to the store, jump to any stage (long-gap testing), reset, and inspect true odds, estimator output, raw vs capped save chance, active modifiers, triggers, the debug log and the full state.
