@@ -42,7 +42,10 @@ const addUp = async (page, id) => { await page.selectOption('#dbg-up', id); awai
 {
   const page = await open(1366, 768);
   check('title: trophy shelf shows 5 locked awards', (await page.$$('.medal.locked')).length === 5);
-  check('title: fits 1366×768 without scrolling', await noPageScroll(page));
+  // The Opponents Defeated collection is open by default, so the title page may scroll a little; what matters is
+  // that the actions, the trophy shelf and the start of the collection are all on the first screen.
+  check('title: Start, trophy shelf and the collection heading are on the first screen at 1366×768', await inView(page, '#start') && await inView(page, '.medals') && await inView(page, '#foes > summary'));
+  check('title: no horizontal scroll', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await shot(page, 'title');
   await page.keyboard.press('m');
   check('title: M toggles Hard Mode on', await page.isChecked('#hard-mode'));
@@ -354,8 +357,8 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
 {
   // New feature: Opponents Defeated collection
   const page = await open(1366, 768);
-  check('collection: collapsed by default, 0 of 20', !(await page.$eval('#foes', (d) => d.open)) && (await page.textContent('#foes-count')).startsWith('0 of 20'));
-  await page.click('#foes > summary');
+  check('collection: OPEN by default, 0 of 20', (await page.$eval('#foes', (d) => d.open)) && (await page.textContent('#foes-count')).startsWith('0 of 20'));
+  check('collection: visible on the first screen at 1366×768 without scrolling', await page.$eval('#foes .foe-grid', (el) => el.getBoundingClientRect().top < innerHeight));
   check('collection: opens; all 20 are mystery tiles at first', (await page.$$('.foe-unknown .foe-mystery')).length === 20 && (await page.$$('.foe .asset-img')).length === 0);
   await page.keyboard.press('Enter');
   const first = await page.evaluate(() => JSON.parse(localStorage.getItem('rps-roguelite.save.v1') ?? localStorage.getItem(Object.keys(localStorage).find((k) => k.includes('save')) ?? '') ?? 'null')?.opponentId ?? null);
@@ -370,7 +373,10 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
   const states = await page.$$eval('.foe', (els) => els.map((e) => e.className.match(/foe-(unknown|met|defeated)/)[1]));
   const count = (k) => states.filter((x) => x === k).length;
   check('collection: one defeated, one met (not yet defeated), the rest unknown', count('defeated') === 1 && count('met') === 1 && count('unknown') === 18, `${count('defeated')}/${count('met')}/${count('unknown')}`);
-  check('collection: remembered open after reload', await page.$eval('#foes', (d) => d.open));
+  check('collection: still open after reload', await page.$eval('#foes', (d) => d.open));
+  await page.click('#foes > summary'); await page.waitForTimeout(80); await page.reload();
+  check('collection: closing it is remembered', !(await page.$eval('#foes', (d) => d.open)));
+  await page.click('#foes > summary'); await page.waitForTimeout(80);
   check('collection: defeated card is crossed off and stamped', !!(await page.$('.foe-defeated .foe-stamp')) && await page.$eval('.foe-defeated .foe-name', (e) => getComputedStyle(e).textDecorationLine.includes('line-through')));
   check('collection: met card shows portrait and “Not yet defeated”', (await imgsLoaded(page, '.foe-met img.asset-img')) === 1 && (await page.textContent('.foe-met .foe-state')) === 'Not yet defeated');
   check('collection: count updates', (await page.textContent('#foes-count')).startsWith('1 of 20 defeated · 2 met'));
@@ -381,6 +387,55 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
   check('collection: no horizontal scroll on a phone', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   if (SHOTS) { await (await page.$('#foes')).scrollIntoViewIfNeeded(); await page.screenshot({ path: `${SHOTS}/r6-collection-390.png` }); }
   await page.close();
+}
+
+// ---------- round 7 ----------
+{
+  const page = await open(1366, 768);
+  await page.click('#start');
+  check('normal mode starts with 3 Extra Lives', (await page.textContent('[data-fx="lives"] .hud-num')).replace(/\D/g, '') === '3');
+  await page.keyboard.press('r'); await page.waitForTimeout(120);
+  check('history header says “Rounds ago”', (await page.textContent('.ht-head .ht-label')).trim() === 'Rounds ago' && !(await page.innerText('body')).includes('Turns ago'));
+  check('history note no longer says “counts rounds in this table”', !(await page.innerText('body')).includes('counts rounds in this table'));
+  const art = await page.$$eval('.throw-art img.asset-img', (im) => im.map((i) => { const a = i.getBoundingClientRect(), p = i.parentElement.getBoundingClientRect(); return Math.abs((a.left + a.right) / 2 - (p.left + p.right) / 2) + Math.abs((a.top + a.bottom) / 2 - (p.top + p.bottom) / 2); }));
+  check('throw pictures sit centred in their discs', art.length === 3 && art.every((d) => d < 1.5), art.map((d) => d.toFixed(1)).join(','));
+  await page.close();
+  const hp = await open(1366, 768);
+  await hp.click('#hard-mode'); await hp.click('#start');
+  check('Hard Mode still starts with 0 Extra Lives', (await hp.textContent('[data-fx="lives"] .hud-num')).replace(/\D/g, '') === '0');
+  await hp.close();
+}
+{
+  // phones: pinned HUD while scrolling the run screen; bought cards collapse in the store
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  await page.goto(PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
+  await page.tap('#start');
+  await debug(page, async () => { await page.click('text=+1 life'); await page.fill('#dbg-stage', '9'); await page.click('#dbg-jump'); for (const id of ['thick-skull', 'spreadsheet', 'snip-snip']) await addUp(page, id); });
+  for (let i = 0; i < 4; i++) { await page.tap('#throw-P'); await page.waitForTimeout(80); }
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(120);
+  const hud = await page.$eval('.hud', (el) => { const r = el.getBoundingClientRect(); return { top: r.top, h: r.height, y: scrollY, text: el.innerText }; });
+  check('phone: HUD (round, coins, lives, progress) stays pinned when scrolled to the build panel', hud.y > 600 && hud.top >= -1 && hud.top < 2 && hud.h < 120 && /to store/.test(hud.text), JSON.stringify(hud));
+  check('phone: pinned HUD keeps the progress bar visible', await page.$eval('.hud .progress-track', (el) => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < 130 && r.width > 200; }));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r7-hud-pinned-390.png` });
+  await debug(page, async () => { await page.click('text=+1 life'); await page.click('text=+1000¢'); await page.click('text=Skip to store'); });
+  const tall = await page.$eval('.offers .up-card', (el) => el.getBoundingClientRect().height);
+  const buy = await page.$('.offers .up-card .btn.primary:not([disabled]), .offers .up-card button:not([disabled])');
+  await buy.scrollIntoViewIfNeeded(); await buy.tap(); await page.waitForTimeout(150);
+  const sold = await page.$eval('.offers .sold-card', (el) => ({ h: el.getBoundingClientRect().height, text: el.innerText }));
+  check('phone store: a bought offer collapses to one short line', sold.h < 70 && sold.h < tall / 2 && /bought/i.test(sold.text), `${tall.toFixed(0)}→${sold.h.toFixed(0)}`);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r7-store-sold-390.png`, fullPage: true });
+  await ctx.close();
+  const dp = await open(1366, 768);
+  await dp.keyboard.press('Enter');
+  check('desktop: HUD not sticky, seed visible', await dp.$eval('.hud', (el) => getComputedStyle(el).position !== 'sticky') && await dp.$eval('.hud-seed', (el) => getComputedStyle(el).display !== 'none'));
+  await debug(dp, async () => { await dp.click('text=+1000¢'); await dp.click('text=Skip to store'); });
+  await (await dp.$('.offers .up-card button:not([disabled])')).click(); await dp.waitForTimeout(120);
+  check('desktop store: bought card keeps its full size (grid stays aligned)', await dp.$eval('.offers .sold-card', (el) => el.getBoundingClientRect().height > 150));
+  await dp.close();
 }
 
 check('no page errors', errors.length === 0, errors.join(' | '));

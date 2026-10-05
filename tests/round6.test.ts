@@ -71,7 +71,7 @@ test('tendency texts read as habits, not guarantees (except Sal’s curse, which
 test('build ordering prefs are gone; the collection remembers whether it is open', () => {
   const p = defaultPrefs();
   assert.ok(!('order' in p));
-  assert.equal(p.collectionOpen, false);
+  assert.equal(p.collectionClosed, false); // the collection starts open
 });
 
 test('throw and trophy art: all eight files exist as small WebP images', () => {

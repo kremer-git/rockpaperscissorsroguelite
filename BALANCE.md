@@ -99,6 +99,23 @@ The simulated policies reroll away Delphine and John, so in the encounter report
 
 The simulated optimizer rates it only "solid", because it reads its own estimate well even without the card. Humans lean on the true odds far more, which is why the rarity follows the playtest. No other balance numbers changed this round.
 
+## Round 7 (normal mode starts with 3 Extra Lives)
+
+Playtest: too many normal runs ended almost immediately. Starting lives went from 2 to 3 (Hard Mode stays at 0). 2,000 runs per policy:
+
+| Player | median rounds (2 → 3 lives) | reach store 3 | reach store 6 | p99 |
+|---|---|---|---|---|
+| Random | 9 → 12 | 69% → 90% | 0.5% → 1.1% | 28 → 33 |
+| Baseline | 17 → 26 | 90% → 98% | 21% → 34% | 179 → 237 |
+| Paper-focused | 21 → 30 | 92% → 99% | 29% → 44% | 293 → 359 |
+| Rock-focused | 22 → 30 | 92% → 99% | 30% → 46% | 391 → 479 |
+| Optimizer | 22 → 32 | 92% → 99% | 31% → 48% | 375 → 471 |
+
+- **The early game is much kinder.** Almost every run now reaches store 3. Easy opponents' share of deaths fell from 45% to 26%; medium (41%) and hard (26%) now do most of the killing, which is where the run is supposed to get hard.
+- **The late game barely moved.** p99 rose 20–25%. The extra life is mostly spent in the first few stretches, and Extra Life prices still double per purchase.
+- **Nothing became immortal:** no run in any policy hit the safety cap, and the god build is unchanged (median ~960).
+- If normal mode now feels too soft mid-game, the lightest lever is the first Extra Life price (35¢) rather than going back to 2 lives.
+
 ## Store curve
 
 Compared linear, Fibonacci, quadratic, exponential ×1.8 and a tuned ×1.5 curve (`reports/curves.md`). Linear never produces absurd late gaps (33 rounds at store 11) so it fails the core fantasy. Exponential jumps to 38 and 68 too early, before builds exist, and has the fewest runs reaching store 8. Quadratic gets few runs past store 6. The tuned ×1.5 curve is essentially tied with Fibonacci on every metric; Fibonacci was kept because it grows faster late (×1.618 per stage vs ×1.5), which is what makes the final stretch feel absurd, and players recognise the sequence. Store indices sit at different round counts on each curve, so compare medians and gap survival rather than store numbers across curves. Uncapped.

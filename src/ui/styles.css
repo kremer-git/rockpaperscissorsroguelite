@@ -519,3 +519,28 @@ html:not(.fit) .store-head .wallet { display: none; }
 .fit .medal { padding: 6px 8px; gap: 2px; }
 .fit .medal-art { width: 52px; height: 52px; }
 .fit .tagline { margin-top: 8px; }
+
+/* ---------- phones / narrow windows: bought offers shrink to one line ---------- */
+html:not(.fit) .up-card.sold-card { grid-template-rows: auto; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 12px; border-top-width: 4px; opacity: .7; }
+html:not(.fit) .sold-card .card-text, html:not(.fit) .sold-card .stack-note, html:not(.fit) .sold-card .card-flavor, html:not(.fit) .sold-card .card-meta { display: none; }
+html:not(.fit) .sold-card .card-head { align-items: center; }
+html:not(.fit) .sold-card .card-icon { width: 30px; height: 30px; font-size: 1rem; }
+html:not(.fit) .sold-card .card-titles h3 { font-size: 1.05rem; }
+html:not(.fit) .sold-card .card-foot { border-top: 0; padding-top: 0; }
+html:not(.fit) .sold-card .sold::before { content: '✓ '; }
+
+/* ---------- phones / narrow windows: compact HUD pinned to the top while playing ---------- */
+html:not(.fit) .screen.run .hud { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 14; margin-inline: -16px; border-radius: 0 0 12px 12px; border-top: 0;
+  padding: 6px 16px 8px; gap: 2px 18px; grid-template-columns: repeat(3, auto) 1fr; align-items: center;
+  background: rgba(16,36,30,.97); box-shadow: 0 6px 14px rgba(0,0,0,.4); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+html:not(.fit) .screen.run .hud .hud-stat { gap: 0; }
+html:not(.fit) .screen.run .hud .eyebrow { font-size: .58rem; }
+html:not(.fit) .screen.run .hud .hud-num { font-size: 1.35rem; }
+html:not(.fit) .screen.run .hud .hud-progress { grid-column: 1 / -1; }
+html:not(.fit) .screen.run .hud .progress-top { margin-bottom: 3px; font-size: .78rem; }
+html:not(.fit) .screen.run .hud .progress-top .eyebrow { font-size: .56rem; }
+html:not(.fit) .screen.run .hud .progress-track { height: 8px; }
+html:not(.fit) .screen.run .hud .hud-seed { display: none; }
+html:not(.fit) .screen.run .run-grid { margin-top: 10px; }
+.medal-art .asset-img { border-radius: 12px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+.medal.locked .medal-art .asset-img { filter: grayscale(1) brightness(.5) contrast(.9); opacity: .45; }

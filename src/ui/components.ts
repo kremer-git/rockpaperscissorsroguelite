@@ -49,7 +49,7 @@ export function upgradeCard(d: UpgradeDef, stacksShown: number, footer?: HTMLEle
 
 /**
  * History as a small table. Columns run oldest → newest; the header counts
- * "turns ago" (1 = last round) so "two rounds ago" behaviours are easy to check.
+ * "rounds ago" (1 = last round) so "two rounds ago" behaviours are easy to check.
  */
 export function historyTable(hist: RoundRecord[]): HTMLElement {
   if (!hist.length) return h('p', { class: 'muted small' }, 'No rounds against this opponent yet.');
@@ -57,7 +57,7 @@ export function historyTable(hist: RoundRecord[]): HTMLElement {
   const cell = (cls: string, text: string, title?: string) => h('span', { class: `ht-cell ${cls}`, title }, text);
   const res = (r: RoundRecord) => (r.saved ? 'S' : r.outcome === 'WIN' ? 'W' : r.outcome === 'TIE' ? 'T' : 'L');
   return h('div', { class: 'ht', role: 'table', 'aria-label': 'Recent rounds against this opponent' },
-    h('div', { class: 'ht-row ht-head', role: 'row' }, h('span', { class: 'ht-label' }, 'Turns ago'), hist.map((_, i) => cell('ht-ago', String(n - i)))),
+    h('div', { class: 'ht-row ht-head', role: 'row' }, h('span', { class: 'ht-label' }, 'Rounds ago'), hist.map((_, i) => cell('ht-ago', String(n - i)))),
     hist.some((r) => r.said) ? h('div', { class: 'ht-row ht-said', role: 'row' }, h('span', { class: 'ht-label', title: 'What they announced before throwing' }, 'Said'),
       hist.map((r) => (r.said ? cell(`ht-move said tree-${treeOf(r.said)}`, r.said, `Announced ${MOVE_NAME[r.said]}`) : cell('ht-move', '·')))) : null,
     h('div', { class: 'ht-row', role: 'row' }, h('span', { class: 'ht-label' }, 'Them'), hist.map((r) => cell(`ht-move tree-${treeOf(r.opponent)}`, r.opponent, MOVE_NAME[r.opponent]))),
@@ -103,7 +103,7 @@ export function intelPanel(v: IntelView, s: GameState): HTMLElement {
   if (v.flags.hidden) return h('div', { class: 'intel' }, h('p', { class: 'note' }, 'No Thoughts Just Rock: all intel is hidden. You are at peace.'));
   const blocks: (HTMLElement | null)[] = [
     h('div', null, h('div', { class: 'eyebrow' }, `History vs ${v.opponent.name} (last ${Math.min(v.flags.historyWindow, s.stageHistory.length)} of ${s.stageHistory.length})`), historyTable(v.visibleHistory),
-      h('p', { class: 'small muted reset-note' }, 'Starts fresh with every new opponent. When a tendency says “your previous throw” or “two rounds ago”, it only counts rounds in this table, so their first throw after a store reacts to nothing.')),
+      h('p', { class: 'small muted reset-note' }, 'This history starts over at every store. A new opponent’s first throw can’t react to anything you did.')),
   ];
   if (v.frequencies) {
     const f = v.frequencies;

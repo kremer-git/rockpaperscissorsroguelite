@@ -56,7 +56,7 @@ export function titleScreen(app: App): HTMLElement {
       h('button', { class: 'btn big', id: 'howto', onclick: () => app.actions.go('howto') }, 'How to play', h('kbd', null, 'H'))),
     h('label', { class: `mode-toggle ${hard ? 'on' : ''}`, for: 'hard-mode' },
       h('input', { type: 'checkbox', id: 'hard-mode', checked: hard, onchange: () => app.actions.setPrefs((q) => { q.hardMode = !q.hardMode; }) }),
-      h('span', null, h('b', null, 'Hard Mode'), hard ? ': start with 0 Extra Lives. Good luck.' : ': start with 0 Extra Lives instead of 2.'), h('kbd', null, 'M')),
+      h('span', null, h('b', null, 'Hard Mode'), hard ? ': start with 0 Extra Lives. Good luck.' : ': start with 0 Extra Lives instead of 3.'), h('kbd', null, 'M')),
     h('form', { class: 'seed-form', onsubmit: (e: Event) => { e.preventDefault(); startSeeded(); } },
       h('label', { for: 'seed-input', class: 'small muted' }, 'Play a specific seed'),
       h('input', { id: 'seed-input', type: 'text', inputmode: 'text', autocomplete: 'off', placeholder: 'e.g. 12345 or “lizard spock”', maxlength: '40', class: 'seed-input' }),
@@ -72,7 +72,7 @@ export function titleScreen(app: App): HTMLElement {
 }
 
 /** Title screen: "Opponents Defeated" collection. Unknown opponents are a mystery tile; met-but-unbeaten ones are
- *  shown and marked as still to beat; beaten ones are crossed off. Collapsed by default, remembered in prefs. */
+ *  shown and marked as still to beat; beaten ones are crossed off. Open by default (easy to miss otherwise); closing it is remembered. */
 function foesCollection(app: App, p: Progress): HTMLElement {
   const statuses = OPPONENTS.map((o) => ({ o, st: foeStatus(p, o.id) }));
   const beaten = statuses.filter((x) => x.st === 'defeated').length;
@@ -84,8 +84,8 @@ function foesCollection(app: App, p: Progress): HTMLElement {
       : h('span', { class: 'foe-pic portrait' }, asset(o.portrait, 'portrait-glyph'), st === 'defeated' ? h('span', { class: 'foe-stamp', 'aria-hidden': 'true' }, 'Defeated') : null),
     h('span', { class: 'foe-name' }, st === 'unknown' ? '???' : o.name),
     h('span', { class: 'foe-state small' }, st === 'unknown' ? 'Not met yet' : st === 'met' ? 'Not yet defeated' : 'Defeated')));
-  return h('details', { class: 'shelf foes', id: 'foes', open: app.prefs.collectionOpen,
-    ontoggle: (e: Event) => { const open = (e.target as HTMLDetailsElement).open; if (open !== app.prefs.collectionOpen) app.actions.setPrefs((q) => { q.collectionOpen = open; }); } },
+  return h('details', { class: 'shelf foes', id: 'foes', open: !app.prefs.collectionClosed,
+    ontoggle: (e: Event) => { const open = (e.target as HTMLDetailsElement).open; if (open === !!app.prefs.collectionClosed) app.actions.setPrefs((q) => { q.collectionClosed = !open; }); } },
     h('summary', { class: 'shelf-head' }, h('span', { class: 'eyebrow' }, 'Opponents defeated'),
       h('span', { class: 'small muted num', id: 'foes-count' }, `${beaten} of ${OPPONENTS.length} defeated · ${met} met`)),
     h('p', { class: 'small muted foes-help' }, 'Beat an opponent by surviving a whole stretch against them and reaching the store.'),
@@ -95,7 +95,7 @@ function foesCollection(app: App, p: Progress): HTMLElement {
 const STEPS: [string, string][] = [
   ['Throw', 'Pick Rock, Paper or Scissors (keys R, P, S). Rock beats Scissors, Scissors beats Paper, Paper beats Rock. The opponent locks in its throw before you choose.'],
   ['Win for coins', 'A win pays 12 coins. A tie pays 5 and the run continues. After each result the buttons light up again: keep throwing until the store.'],
-  ['Losing ends the run', 'Unless you own an Extra Life, which is used up instead. You start with 2 (0 in Hard Mode).'],
+  ['Losing ends the run', 'Unless you own an Extra Life, which is used up instead. You start with 3 (0 in Hard Mode).'],
   ['Shop at stores', 'Stores sell upgrades, Extra Lives, rerolls of the offers, and a swap of your next opponent. You always see who’s next before you leave.'],
   ['New opponent, fresh memory', 'Each store brings a new opponent who knows nothing about you. Tendencies are habits, not rules: every opponent can surprise you now and then. When a tendency mentions “your previous throw” or “two rounds ago”, it only counts rounds against that opponent, so their first throw after a store reacts to nothing. Your own streak upgrades (Muscle Memory, Momentum…) do carry over.'],
   ['Build something', 'Rock makes Rock safer and rewards stubbornness. Paper reads the opponent: tendencies, hunches, leaks. Scissors turns risk into money. Mix freely.'],

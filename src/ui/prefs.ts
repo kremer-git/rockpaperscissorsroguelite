@@ -11,8 +11,8 @@ export interface Prefs {
   hidden: { hunch: boolean; coldRead: boolean };
   /** Build items the player expanded for details. */
   expanded: string[];
-  /** Title screen: the Opponents Defeated collection is expanded. */
-  collectionOpen: boolean;
+  /** Title screen: the player closed the Opponents Defeated collection (it starts open). */
+  collectionClosed: boolean;
   /** Music / effects volume and mute. */
   audio: AudioSettings;
 }
@@ -26,7 +26,7 @@ export function defaultPrefs(): Prefs {
     treeCollapsed: { rock: false, paper: false, scissors: false },
     hidden: { hunch: false, coldRead: false },
     expanded: [],
-    collectionOpen: false,
+    collectionClosed: false,
     audio: { ...DEFAULT_AUDIO },
   };
 }
@@ -43,7 +43,7 @@ export function loadPrefs(): Prefs {
       treeCollapsed: { ...d.treeCollapsed, ...(p.treeCollapsed ?? {}) },
       hidden: { ...d.hidden, ...(p.hidden ?? {}) },
       expanded: Array.isArray(p.expanded) ? p.expanded.filter((x) => typeof x === 'string') : [],
-      collectionOpen: !!p.collectionOpen,
+      collectionClosed: !!p.collectionClosed,
       audio: { ...d.audio, ...(p.audio && typeof p.audio === 'object' ? p.audio : {}) },
     };
   } catch { return d; }

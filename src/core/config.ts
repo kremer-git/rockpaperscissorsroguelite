@@ -3,7 +3,7 @@
 
 export const CONFIG = {
   startingCurrency: 25,
-  startingLives: 2,
+  startingLives: 3,
 
   rewards: {
     win: 12,
