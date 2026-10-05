@@ -4,7 +4,7 @@ import { buyLife, buyUpgrade, createRun, leaveStore, playRound, rerollOpponent, 
 import { allInAvailable, canThrow } from '../core/rules';
 import { h } from './dom';
 import { installPresentation, flushFx } from './presentation';
-import { applyAudioSettings, cueFor, installAudio, playCue, playSynth, setMusic, throwSound, type MusicTrack } from './audio';
+import { applyAudioSettings, audioDebug, cueFor, installAudio, playCue, playSynth, setMusic, sfxLog, throwSound, type MusicTrack } from './audio';
 import { onEngineEvent } from '../core/engine';
 import { getOpponent } from '../core/opponentModel';
 import type { Screen as ScreenName } from './app';
@@ -12,12 +12,15 @@ import { runScreen } from './runScreen';
 import { storeScreen } from './storeScreen';
 import { titleScreen, howtoScreen, gameOverScreen, HOWTO_STEPS } from './menus';
 import { debugPanel } from './debugPanel';
+import { OPPONENTS } from '../content/opponents';
 
 /** Set at build time: true only in the dev/test build (debug panel), false in the published game. */
 declare const __DEBUG__: boolean;
 import { soundDock } from './soundDock';
+import * as director from './director';
+import { motionOK, setEffectsReduced } from './juice';
 import { loadPrefs, savePrefs } from './prefs';
-import { AWARDS, connectRemote, loadLocal, noteBeaten, noteMet, recordRounds, saveProgress } from './awards';
+import { connectRemote, loadLocal, noteBeaten, noteMet, recordRounds, saveProgress } from './awards';
 
 const SAVE_KEY = 'rps-roguelite.run.v1';
 
@@ -45,11 +48,12 @@ const saved = load();
 
 const app: App = {
   screen: 'title', state: null, last: null, allIn: false, debugOpen: false, debugEnabled: __DEBUG__,
-  toast: null, howtoStep: 0, hasSave: !!saved, soundOpen: false, prefs: loadPrefs(), progress: loadLocal(),
+  toast: null, howtoStep: 0, hasSave: !!saved, soundOpen: false, prefs: loadPrefs(), progress: loadLocal(), busy: false,
   actions: {
     start(seed?: number, mode?: 'normal' | 'hard') {
       const m = mode ?? (app.prefs.hardMode ? 'hard' : 'normal');
       app.state = createRun(seed !== undefined ? { seed, mode: m } : { mode: m });
+      director.newRun();
       app.progress.runs++; saveProgress(app.progress);
       app.last = null; app.allIn = false; app.screen = 'run'; app.hasSave = false;
       save(app.state); render();
@@ -61,18 +65,36 @@ const app: App = {
     },
     throwMove(m: Move) {
       const s = app.state;
-      if (!s || s.status !== 'playing' || app.screen !== 'run') return;
+      if (!s || s.status !== 'playing' || app.screen !== 'run' || app.busy) return;
       if (!canThrow(s, m)) { app.actions.notify('Absolute Unit says: that throw costs coins you don’t have. Rock is free.'); return; }
-      try {
-        throwSound(m);
-        app.last = playRound(s, m, { allIn: app.allIn && allInAvailable(s) });
-        app.allIn = false;
-        checkAwards(s);
-      } catch (e) { if (e instanceof RuleError) app.actions.notify(e.message); else throw e; }
-      save(s); render();
+      const allInAtPress = app.allIn && allInAvailable(s); // decided when the key was pressed, not after the pump
+      const commit = () => {
+        if (app.state !== s || s.status !== 'playing' || app.screen !== 'run') return;
+        const before = director.snapshot(s);
+        try {
+          throwSound(m);
+          app.last = playRound(s, m, { allIn: allInAtPress });
+          app.allIn = false;
+          checkAwards(s);
+        } catch (e) { if (e instanceof RuleError) app.actions.notify(e.message); else throw e; }
+        save(s); render();
+        director.afterRound(app, before);
+        if ((s.status as string) === 'dead') director.death(app, () => app.actions.goOver());
+      };
+      // The pump ("rock, paper, scissors, SHOOT") is ~200 ms and only with effects on. The throw is already
+      // locked in by the opponent; this is presentation only.
+      if (!motionOK()) { commit(); return; }
+      app.busy = true;
+      void director.pump(m).then(() => { app.busy = false; commit(); });
     },
-    toggleAllIn() { if (app.state && app.state.status === 'playing' && app.screen === 'run' && allInAvailable(app.state)) { app.allIn = !app.allIn; render(); } },
-    buy(slot) { tryStore(() => buyUpgrade(app.state!, slot)); },
+    toggleAllIn() { if (app.busy) return; if (app.state && app.state.status === 'playing' && app.screen === 'run' && allInAvailable(app.state)) { app.allIn = !app.allIn; render(); } },
+    buy(slot) {
+      const icon = document.querySelector(`.offers .up-card[data-slot="${slot}"] .card-icon`)?.getBoundingClientRect() ?? null;
+      const wasSold = !!app.state?.store?.offers.find((o) => o.slot === slot)?.sold;
+      tryStore(() => buyUpgrade(app.state!, slot));
+      const nowSold = !!app.state?.store?.offers.find((o) => o.slot === slot)?.sold;
+      if (!wasSold && nowSold) director.bought(slot, icon); // only a real purchase gets the stamp
+    },
     buyLife() { tryStore(() => buyLife(app.state!)); },
     rerollStore() { tryStore(() => rerollStore(app.state!)); },
     rerollOpponent() { tryStore(() => rerollOpponent(app.state!)); },
@@ -81,12 +103,13 @@ const app: App = {
       leaveStore(s); app.last = null; app.allIn = false; app.screen = 'run'; save(s); render(); focusFirst('#throw-R');
     },
     goStore() { if (app.state?.status === 'store') { app.screen = 'store'; render(); focusFirst('#leave-store'); } },
-    goOver() { if (app.state?.status === 'dead') { app.screen = 'over'; save(null); render(); focusFirst('#restart'); } },
+    goOver() { if (app.state?.status === 'dead' && app.screen !== 'over') { app.screen = 'over'; save(null); render(); director.overIntro(); focusFirst('#restart'); } },
     go(screen: Screen) { app.screen = screen; if (screen === 'howto') app.howtoStep = 0; if (screen === 'title') app.hasSave = !!load(); render(); },
     setHowto(i) { app.howtoStep = i; render(); },
     toggleDebug() { if (!__DEBUG__) return; app.debugOpen = !app.debugOpen; render(); },
     render: () => render(),
-    setPrefs(fn) { fn(app.prefs); savePrefs(app.prefs); render(); },
+    setPrefs(fn) { fn(app.prefs); savePrefs(app.prefs); setEffectsReduced(app.prefs.effects === 'reduced'); render(); },
+    setPrefsSilently() { savePrefs(app.prefs); },
     notify(msg) { app.toast = msg; render(); window.setTimeout(() => { if (app.toast === msg) { app.toast = null; render(); } }, 3200); },
   },
 };
@@ -103,7 +126,6 @@ function checkAwards(s: GameState): void {
     window.setTimeout(() => { if (app.toast?.startsWith('Award unlocked')) { app.toast = null; render(); } }, 4500);
   } else if (s.status === 'dead' && app.progress.best !== before) saveProgress(app.progress);
 }
-void AWARDS;
 
 function tryStore(fn: () => void): void {
   if (!app.state || app.state.status !== 'store') return;
@@ -135,7 +157,7 @@ const MUSIC_FOR: Record<ScreenName, MusicTrack> = { title: 'title', howto: 'titl
 
 let lastScreen = '';
 function render(): void {
-  setMusic(MUSIC_FOR[app.screen]);
+  if (!director.isDying()) setMusic(MUSIC_FOR[app.screen]);
   // Persist the run on every render so debug edits and preference-driven changes survive a reload too.
   if (app.state && (app.screen === 'run' || app.screen === 'store')) save(app.state);
   const focusedId = (document.activeElement as HTMLElement | null)?.id;
@@ -152,9 +174,18 @@ function render(): void {
     soundDock(app),
     __DEBUG__ && app.debugOpen ? debugPanel(app) : '');
   // A new screen starts at the top (on phones the page scrolls, and the old position would otherwise carry over).
-  if (app.screen !== lastScreen) { lastScreen = app.screen; window.scrollTo(0, 0); }
+  if (app.screen !== lastScreen) {
+    lastScreen = app.screen; window.scrollTo(0, 0);
+    // anything still flying (coins, tokens, sparks) belongs to the old screen
+    if (!director.isDying()) document.querySelectorAll('#fx-layer > *').forEach((e) => e.remove());
+  }
   if (focusedId) (document.getElementById(focusedId) as HTMLElement | null)?.focus({ preventScroll: true });
   flushFx(root);
+  // 6: danger tint at 0 Extra Lives (not at the start of a Hard Mode run, only once a bought life is gone)
+  const s = app.state;
+  document.documentElement.classList.toggle('danger', !!s && app.screen === 'run' && s.status === 'playing' && s.lives === 0 && (s.mode !== 'hard' || s.stats.livesPurchased > 0));
+  if (app.screen === 'store') director.store(app);
+  if (app.screen === 'title') director.title(app);
 }
 
 // ---------------- keyboard ----------------
@@ -205,6 +236,13 @@ document.addEventListener('keydown', (e) => {
 
 installPresentation();
 installAudio();
+if (__DEBUG__) (window as unknown as { __fx: unknown }).__fx = { sfx: sfxLog, audio: audioDebug };
+setEffectsReduced(app.prefs.effects === 'reduced');
+// Warm the image cache so pictures never blink in when a screen re-renders.
+window.setTimeout(() => {
+  const srcs = ['art/move-R.webp', 'art/move-P.webp', 'art/move-S.webp', ...[100, 200, 300, 400, 500].map((n) => `art/award-${n}.webp`), ...OPPONENTS.map((o) => `portraits/${o.id}.jpg`)];
+  for (const src of srcs) { const im = new Image(); im.src = src; void im.decode?.().catch(() => undefined); }
+}, 300);
 applyAudioSettings(app.prefs.audio);
 onEngineEvent((e) => playCue(cueFor(e)));
 // Opponents Defeated collection: a stretch counts as "met" once you've thrown against them, and as a defeat

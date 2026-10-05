@@ -19,6 +19,8 @@ export interface App {
   prefs: Prefs;
   soundOpen: boolean;
   progress: Progress;
+  /** True while the ~200 ms throw pump plays: further throws are ignored. */
+  busy: boolean;
   actions: {
     start(seed?: number, mode?: 'normal' | 'hard'): void;
     resume(): void;
@@ -38,5 +40,7 @@ export interface App {
     notify(msg: string): void;
     /** Change preferences, save them and re-render. */
     setPrefs(fn: (p: Prefs) => void): void;
+    /** Save preferences without re-rendering (for bookkeeping during effects). */
+    setPrefsSilently(): void;
   };
 }

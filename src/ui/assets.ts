@@ -59,7 +59,7 @@ export function upgradeAsset(icon: string, tree: string, name: string): AssetDef
 export function asset(key: string, cls = '', fallback?: AssetDef): HTMLElement {
   const a = ASSETS[key] ?? fallback ?? { glyph: '?', label: key };
   if (a.image) {
-    const img = h('img', { class: `asset asset-img ${cls}`, src: a.image, alt: a.label, 'data-asset': key, draggable: 'false' }) as HTMLImageElement;
+    const img = h('img', { class: `asset asset-img ${cls}`, src: a.image, alt: a.label, 'data-asset': key, draggable: 'false', decoding: 'sync' }) as HTMLImageElement;
     // Missing file (e.g. index.html copied without its portraits folder): fall back to the placeholder glyph.
     img.addEventListener('error', () => img.replaceWith(glyphTile(key, cls, a)), { once: true });
     return img;

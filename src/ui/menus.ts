@@ -38,7 +38,7 @@ export function titleScreen(app: App): HTMLElement {
       h('span', { class: 'small muted num' }, p.best ? `Best run: ${fmt(p.best)} round${p.best === 1 ? '' : 's'}${p.bestHard ? ` · Hard: ${fmt(p.bestHard)}` : ''} · ${fmt(p.runs)} run${p.runs === 1 ? '' : 's'}` : 'No runs yet. The shelf is judging you.')),
     h('ol', { class: 'medals' }, AWARDS.map((a, i) => {
       const u = p.unlocked[String(a.rounds)];
-      return h('li', { class: `medal ${u ? 'won' : 'locked'} tier-${i + 1}`, title: u ? `${a.blurb}${u.at ? ` Earned ${u.at.slice(0, 10)}.` : ''}` : `Reach round ${a.rounds} in one run.` },
+      return h('li', { class: `medal ${u ? 'won' : 'locked'} tier-${i + 1}`, 'data-award': String(a.rounds), title: u ? `${a.blurb}${u.at ? ` Earned ${u.at.slice(0, 10)}.` : ''}` : `Reach round ${a.rounds} in one run.` },
         h('span', { class: 'medal-art', 'aria-hidden': 'true' }, asset(`award.${a.rounds}`, 'medal-img')),
         h('span', { class: 'medal-name' }, u ? a.name : '???'),
         u?.hard ? h('span', { class: 'hard-tag small' }, 'HARD') : h('span', { class: 'small muted' }, u ? 'Unlocked' : `Round ${a.rounds}`));

@@ -13,6 +13,11 @@ export interface Prefs {
   expanded: string[];
   /** Title screen: the player closed the Opponents Defeated collection (it starts open). */
   collectionClosed: boolean;
+  /** Effects: 'reduced' turns off cosmetic animation (also automatic when the device asks for reduced motion). */
+  effects: 'full' | 'reduced';
+  /** Collection stamps / trophies whose reveal animation has already played in this browser (null = not tracked yet). */
+  seenDefeats: string[] | null;
+  seenTrophies: number[] | null;
   /** Music / effects volume and mute. */
   audio: AudioSettings;
 }
@@ -27,6 +32,9 @@ export function defaultPrefs(): Prefs {
     hidden: { hunch: false, coldRead: false },
     expanded: [],
     collectionClosed: false,
+    effects: 'full',
+    seenDefeats: null,
+    seenTrophies: null,
     audio: { ...DEFAULT_AUDIO },
   };
 }
@@ -44,6 +52,9 @@ export function loadPrefs(): Prefs {
       hidden: { ...d.hidden, ...(p.hidden ?? {}) },
       expanded: Array.isArray(p.expanded) ? p.expanded.filter((x) => typeof x === 'string') : [],
       collectionClosed: !!p.collectionClosed,
+      effects: p.effects === 'reduced' ? 'reduced' : 'full',
+      seenDefeats: Array.isArray(p.seenDefeats) ? p.seenDefeats.filter((x) => typeof x === 'string') : null,
+      seenTrophies: Array.isArray(p.seenTrophies) ? p.seenTrophies.filter((x) => typeof x === 'number') : null,
       audio: { ...d.audio, ...(p.audio && typeof p.audio === 'object' ? p.audio : {}) },
     };
   } catch { return d; }

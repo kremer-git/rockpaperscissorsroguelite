@@ -22,7 +22,7 @@ const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gestur
 const errors = [];
 
 async function open(w, h) {
-  const page = await browser.newPage({ viewport: { width: w, height: h } });
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: w, height: h } });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
   await page.goto(PAGE);
@@ -138,7 +138,7 @@ for (const [w, h] of [[1366, 768], [1920, 1080], [2560, 1440]]) {
 
 // ---------- sound: music per screen, throw sounds, purchase, life lost, mute ----------
 {
-  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1366, height: 768 } });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
   // Record every <audio> play() call (src + volume) without needing real speakers.
@@ -272,7 +272,7 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   await page.keyboard.press('Enter');
   await debug(page, async () => { await page.fill('#dbg-stage', '9'); await page.click('#dbg-jump'); await page.click('text=LOSS if you throw R'); });
   while (await page.$('#throw-R:not([disabled])') && !(await page.$('#go-over'))) { await debug(page, async () => { await page.click('text=LOSS if you throw R'); }); await page.keyboard.press('r'); await page.waitForTimeout(60); }
-  await page.click('#go-over');
+  await page.waitForSelector('.screen.over', { timeout: 4000 }); // death now moves on by itself
   const n = await page.waitForFunction(() => { const im = [...document.querySelectorAll('.opp-list .portrait img.asset-img')]; return im.length && im.every((i) => i.complete && i.naturalWidth === 256) ? im.length : 0; }, null, { timeout: 3000 }).then((h) => h.jsonValue()).catch(() => 0);
   check('game over lists opponents with their portraits', n >= 1, `${n}`);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/portrait-over.png` });
@@ -280,7 +280,7 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
 }
 {
   // a copy of index.html without its portraits folder still works: initials appear instead
-  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1366, height: 768 } });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route(/portraits\//, (r) => r.abort());
   await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
@@ -295,7 +295,7 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
 const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [...document.querySelectorAll(sel)]; return im.length && im.every((i) => i.complete && i.naturalWidth > 0) ? im.length : 0; }, sel, { timeout: 4000 }).then((h) => h.jsonValue()).catch(() => 0);
 {
   // (1) the PUBLISHED build has no debug mode at all
-  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 1366, height: 768 } });
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
   await page.goto(PUBLIC_PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
@@ -320,7 +320,7 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
 }
 {
   // (5) phone: after the store, the next round starts at the top of the page
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
@@ -407,7 +407,7 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
 }
 {
   // phones: pinned HUD while scrolling the run screen; bought cards collapse in the store
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(e.message));
   await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());

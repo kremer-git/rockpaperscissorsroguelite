@@ -31,7 +31,9 @@ export function storeScreen(app: App): HTMLElement {
           blocked ? 'Unavailable' : afford ? 'Buy' : 'Can’t afford'),
       blocked ? h('span', { class: 'small blocked-note' }, d.id === 'no-thoughts' ? 'Clashes with your intel upgrades.' : 'No Thoughts Just Rock hides all intel.') : null);
     const copyNo = d.maxStacks > 1 && !o.sold ? have + 1 : undefined;
-    return upgradeCard(d, have + (o.sold ? 0 : 1), foot, o.sold ? 'sold-card' : '', copyNo);
+    const card = upgradeCard(d, have + (o.sold ? 0 : 1), foot, o.sold ? 'sold-card' : '', copyNo);
+    card.dataset.slot = String(o.slot);
+    return card;
   });
 
   const lifeCheck = canBuyLife(s);

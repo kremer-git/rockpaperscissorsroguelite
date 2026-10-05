@@ -2,6 +2,7 @@
 import type { Dist, GameState, Move, RoundRecord, Tree, UpgradeDef } from '../core/types';
 import { h, pct } from './dom';
 import { asset, upgradeAsset } from './assets';
+import { MECHANIC_LABEL, mechanicOf, mechanicSvg } from './mechanics';
 import { MOVE_NAME } from '../core/rps';
 import type { IntelView } from '../core/intel';
 import { getUpgrade } from '../core/registry';
@@ -36,10 +37,19 @@ export function stackNote(d: UpgradeDef, copyNo?: number): HTMLElement | null {
     copyNo ? h('b', null, ` This is copy ${copyNo} of ${d.maxStacks}.`) : null);
 }
 
+/** Power-up icon: the tree's own Rock/Paper/Scissors drawing, with a small badge for the card's main mechanic. */
+export function upgradeIcon(d: UpgradeDef, cls = ''): HTMLElement {
+  const m = mechanicOf(d);
+  const move = d.tree === 'rock' ? 'R' : d.tree === 'paper' ? 'P' : 'S';
+  return h('div', { class: `card-icon tree-${d.tree} ${cls}`, 'data-mech': m },
+    asset(`move.${move}`, 'icon', upgradeAsset(d.icon, d.tree, d.name)),
+    h('span', { class: `mech mech-${m}`, title: MECHANIC_LABEL[m], 'aria-label': MECHANIC_LABEL[m], role: 'img', html: mechanicSvg(m) }));
+}
+
 export function upgradeCard(d: UpgradeDef, stacksShown: number, footer?: HTMLElement | null, extra = '', copyNo?: number): HTMLElement {
   return h('article', { class: `card up-card tree-${d.tree} rarity-card-${d.rarity} ${extra}` },
     h('header', { class: 'card-head' },
-      h('div', { class: 'card-icon' }, asset(d.icon, 'icon', upgradeAsset(d.icon, d.tree, d.name))),
+      upgradeIcon(d),
       h('div', { class: 'card-titles' }, h('h3', null, d.name), h('div', { class: 'card-meta' }, treeBadge(d.tree), rarityBadge(d.rarity)))),
     h('p', { class: 'card-text' }, d.describe(Math.max(1, stacksShown))),
     stackNote(d, copyNo),

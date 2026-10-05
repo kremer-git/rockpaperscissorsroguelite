@@ -9,7 +9,8 @@ import type { EngineEvent, Move } from '../core/types';
 
 export type MusicTrack = 'title' | 'rounds' | 'store';
 export type FileSfx = 'rock' | 'paper' | 'scissors' | 'purchase' | 'lifeLost';
-export type SynthSfx = 'hover' | 'click' | 'toggle' | 'deny' | 'win' | 'tie' | 'save' | 'phew' | 'death' | 'storeIn' | 'storeOut' | 'award';
+export type SynthSfx = 'hover' | 'click' | 'toggle' | 'deny' | 'win' | 'tie' | 'save' | 'phew' | 'death' | 'storeIn' | 'storeOut' | 'award'
+  | 'coin' | 'coinSmall' | 'tick' | 'drum' | 'drumBig' | 'stamp' | 'deal' | 'impact' | 'scratch' | 'sparkle' | 'shimmer' | 'whoosh' | 'bonk' | 'hit';
 
 export interface AudioSettings {
   music: number; // 0..1, applied on top of MUSIC_CEILING
@@ -140,15 +141,36 @@ const SYNTH: Record<SynthSfx, Note[]> = {
   deny: [{ f: 196, t: 0, d: 0.12, type: 'square', g: 0.09 }, { f: 147, t: 0.09, d: 0.16, type: 'square', g: 0.08 }],
   win: [{ f: 784, t: 0, d: 0.1, type: 'triangle', g: 0.2 }, { f: 1175, t: 0.08, d: 0.18, type: 'triangle', g: 0.18 }],
   tie: [{ f: 523, t: 0, d: 0.12, type: 'sine', g: 0.16 }],
-  save: [{ f: 880, t: 0, d: 0.08, type: 'sine', g: 0.14 }, { f: 1319, t: 0.06, d: 0.08, type: 'sine', g: 0.12 }, { f: 1760, t: 0.12, d: 0.2, type: 'sine', g: 0.1 }],
+  // shield snapping up: a bright rising chime
+  save: [{ f: 660, t: 0, d: 0.22, type: 'sine', g: 0.13, slide: 1320 }, { f: 1319, t: 0.06, d: 0.1, type: 'triangle', g: 0.08 }, { f: 1760, t: 0.12, d: 0.32, type: 'sine', g: 0.09 }],
   phew: [{ f: 600, t: 0, d: 0.35, type: 'sine', g: 0.14, slide: 1200 }],
   death: [{ f: 392, t: 0, d: 0.22, type: 'sawtooth', g: 0.12 }, { f: 330, t: 0.2, d: 0.22, type: 'sawtooth', g: 0.11 }, { f: 262, t: 0.4, d: 0.7, type: 'sawtooth', g: 0.12, slide: 180 }],
-  storeIn: [{ f: 1047, t: 0, d: 0.35, type: 'sine', g: 0.14 }, { f: 1319, t: 0.12, d: 0.45, type: 'sine', g: 0.12 }],
+  // store arrival bell: struck tone with a bright overtone and a second, softer strike
+  storeIn: [{ f: 1319, t: 0, d: 1.1, type: 'sine', g: 0.16 }, { f: 3297, t: 0, d: 0.35, type: 'sine', g: 0.04 }, { f: 1976, t: 0.16, d: 1.0, type: 'sine', g: 0.09 }, { f: 2637, t: 0.16, d: 0.3, type: 'triangle', g: 0.03 }],
   storeOut: [{ f: 300, t: 0, d: 0.25, type: 'triangle', g: 0.1, slide: 900 }],
+  coin: [{ f: 1976, t: 0, d: 0.05, type: 'square', g: 0.035 }, { f: 2637, t: 0.035, d: 0.09, type: 'square', g: 0.03 }],
+  coinSmall: [{ f: 2093, t: 0, d: 0.06, type: 'sine', g: 0.045 }],
+  tick: [{ f: 1500, t: 0, d: 0.018, type: 'square', g: 0.022 }],
+  drum: [{ f: 95, t: 0, d: 0.2, type: 'sine', g: 0.42, slide: 48 }, { f: 190, t: 0, d: 0.04, type: 'triangle', g: 0.08 }],
+  drumBig: [{ f: 72, t: 0, d: 0.6, type: 'sine', g: 0.6, slide: 34 }, { f: 150, t: 0, d: 0.07, type: 'square', g: 0.07 }, { f: 48, t: 0.02, d: 0.5, type: 'sine', g: 0.3 }],
+  stamp: [{ f: 170, t: 0, d: 0.1, type: 'square', g: 0.1, slide: 70 }, { f: 85, t: 0, d: 0.16, type: 'sine', g: 0.34, slide: 45 }],
+  deal: [{ f: 2600, t: 0, d: 0.03, type: 'triangle', g: 0.03, slide: 1400 }],
+  impact: [{ f: 120, t: 0, d: 0.3, type: 'sine', g: 0.5, slide: 38 }, { f: 240, t: 0, d: 0.06, type: 'square', g: 0.09 }],
+  scratch: [{ f: 1400, t: 0, d: 0.12, type: 'sawtooth', g: 0.06, slide: 300 }, { f: 300, t: 0.1, d: 0.16, type: 'sawtooth', g: 0.05, slide: 900 }],
+  sparkle: [{ f: 2093, t: 0, d: 0.12, type: 'sine', g: 0.07 }, { f: 2637, t: 0.06, d: 0.12, type: 'sine', g: 0.06 }, { f: 3136, t: 0.12, d: 0.12, type: 'sine', g: 0.05 }, { f: 4186, t: 0.18, d: 0.3, type: 'sine', g: 0.05 }],
+  shimmer: [{ f: 1568, t: 0, d: 0.5, type: 'sine', g: 0.05, slide: 3136 }, { f: 2349, t: 0.08, d: 0.45, type: 'sine', g: 0.035, slide: 4699 }],
+  whoosh: [{ f: 900, t: 0, d: 0.22, type: 'sawtooth', g: 0.025, slide: 200 }],
+  bonk: [{ f: 330, t: 0, d: 0.09, type: 'triangle', g: 0.14, slide: 250 }],
+  hit: [{ f: 220, t: 0, d: 0.08, type: 'square', g: 0.08, slide: 110 }, { f: 1760, t: 0, d: 0.05, type: 'triangle', g: 0.05 }],
   award: [{ f: 523, t: 0, d: 0.12, type: 'triangle', g: 0.18 }, { f: 659, t: 0.11, d: 0.12, type: 'triangle', g: 0.18 }, { f: 784, t: 0.22, d: 0.12, type: 'triangle', g: 0.18 }, { f: 1047, t: 0.33, d: 0.5, type: 'triangle', g: 0.2 }],
 };
 
-export function playSynth(k: SynthSfx): void {
+/** Recent synth cues (for tests; tiny ring buffer). */
+export const sfxLog: string[] = [];
+
+/** `pitch` scales every note's frequency (e.g. rising ticks). */
+export function playSynth(k: SynthSfx, pitch = 1): void {
+  sfxLog.push(k); if (sfxLog.length > 200) sfxLog.shift();
   if (!unlocked || sfxLevel() <= 0) return;
   try {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -160,8 +182,8 @@ export function playSynth(k: SynthSfx): void {
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = n.type ?? 'sine';
-      osc.frequency.setValueAtTime(n.f, now + n.t);
-      if (n.slide) osc.frequency.exponentialRampToValueAtTime(n.slide, now + n.t + n.d);
+      osc.frequency.setValueAtTime(n.f * pitch, now + n.t);
+      if (n.slide) osc.frequency.exponentialRampToValueAtTime(n.slide * pitch, now + n.t + n.d);
       const peak = (n.g ?? 0.15) * sfxLevel();
       g.gain.setValueAtTime(0.0001, now + n.t);
       g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), now + n.t + 0.006);

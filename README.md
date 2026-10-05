@@ -138,6 +138,31 @@ Policies: Random, Baseline, Rock-, Paper-, Scissors-focused, Tie Economy, Greedy
 - **Animation:** elements carry `data-fx` targets (`clash`, `banner`, `coins`, `lives`, `build`); queued engine events add CSS classes after render. Swap in richer animation without touching rules; the engine never waits on it. `prefers-reduced-motion` disables all of it.
 - A canvas/WebGL renderer could subscribe to the same events (`onEngineEvent`) and read the same `GameState`.
 
+## Effects ("juice")
+
+Cosmetic animations and synthesized sounds layered on top of the game (`src/ui/juice.ts` helpers, `src/ui/director.ts` choreography, CSS at the end of `styles.css`). They animate only transform and opacity and never change game state. Most are under 400 ms.
+
+| When | What you see / hear |
+|---|---|
+| You throw | ~200 ms "pump": both fists bob twice, then the reveal. Further presses (and ALL-IN) are ignored until it lands |
+| Win | Opponent's throw and portrait jolt, dots burst in your tree's colour, coins arc to the coin counter, which counts up (hit + coin ticks) |
+| Tie | Both throws bonk, one or two small coins |
+| Loss (life used) | Red screen edges flash, the clash shakes, the opponent bounces smugly |
+| Save | Purple shield ring snaps around your throw (shield chime) |
+| Each round | Progress bar slides forward with a tick; the pitch rises over the last 3 rounds |
+| Reaching a store | Bar fills, gold sweep, bell |
+| Store opens | Cards are dealt in one by one (not clickable mid-deal); a legendary card gets a gold shimmer |
+| Next stretch ≥ 34 | The number counts up the Fibonacci steps, growing and shaking, drum per step and a big drum on the real number (once per visit; on phones it waits until scrolled into view) |
+| Buying | Red BOUGHT stamp and a token flies to your build list (on phones it flies down toward it) |
+| 0 Extra Lives | Subtle, slowly pulsing red edges (not at the start of a Hard Mode run; only once a bought life is gone) |
+| Always | Opponent portraits breathe very gently |
+| Death | Impact, music cut, record scratch; colour drains while the view pushes in on the clash; RUN OVER slams down with a quip and a drum; fade to the game-over screen, whose stats count up. About 2.5 s; any tap or key skips it |
+| Title | A newly earned trophy spins in with sparkles; a newly defeated opponent gets the DEFEATED stamp slammed on (each plays once, when on screen) |
+
+**Reduce animations** (sound menu) or the device's reduced-motion setting turns all of this off. Throws resolve instantly and death goes to the game-over screen after a short pause.
+
+Power-up cards show their tree's Rock/Paper/Scissors drawing plus one small symbol for their main mechanic (`src/ui/mechanics.ts`): save, payout, intel, streak, lives, risk, tie, recharging save, reroll, grows over the run. Hover for the name.
+
 ## Hard Mode, awards and layout
 
 - **Hard Mode** (title screen toggle, key `M`) starts with 0 Extra Lives. Stored in `GameState.mode`; seeds replay in the same mode.

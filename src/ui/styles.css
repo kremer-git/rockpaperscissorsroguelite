@@ -185,8 +185,12 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .up-card { display: grid; grid-template-rows: auto auto 1fr auto; gap: 10px; padding: 16px; border-top: 8px solid var(--rock); min-width: 0; }
 .up-card.tree-paper { border-top-color: var(--paper); } .up-card.tree-scissors { border-top-color: var(--scissors); }
 .card-head { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
-.card-icon { width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center; font-size: 1.4rem; background: var(--felt); color: var(--ink); }
-.up-card.tree-rock .card-icon { color: var(--rock); } .up-card.tree-paper .card-icon { color: var(--paper); } .up-card.tree-scissors .card-icon { color: var(--scissors); }
+.card-icon { position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 1.4rem; background: #fbf8f0; color: var(--ink); border: 2.5px solid var(--rock); flex: none; }
+.card-icon.tree-paper { border-color: var(--paper); } .card-icon.tree-scissors { border-color: var(--scissors); }
+.card-icon .asset-img { width: 80%; height: 80%; object-fit: contain; display: block; }
+.card-icon .mech { position: absolute; right: -10px; bottom: -8px; width: 21px; height: 21px; padding: 3px; border-radius: 50%; background: #1b2b26; color: var(--gold); box-shadow: 0 0 0 2px var(--card), 0 1px 2px rgba(0,0,0,.4); display: grid; place-items: center; }
+.card-icon .mech svg { display: block; }
+
 .card-titles h3 { font: 800 1.45rem/1 var(--f-display); text-transform: uppercase; }
 .card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; align-items: center; }
 .tree-badge { font: 700 .68rem/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; padding: 3px 6px; border-radius: 4px; color: #15201c; background: var(--rock); }
@@ -544,3 +548,122 @@ html:not(.fit) .screen.run .hud .hud-seed { display: none; }
 html:not(.fit) .screen.run .run-grid { margin-top: 10px; }
 .medal-art .asset-img { border-radius: 12px; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
 .medal.locked .medal-art .asset-img { filter: grayscale(1) brightness(.5) contrast(.9); opacity: .45; }
+
+/* =====================================================================
+   Round 8: juice. Everything below is transform/opacity animation and is
+   switched off by html.calm (reduced motion or "Reduce animations").
+   ===================================================================== */
+#fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 26; overflow: hidden; }
+#fx-layer .fly { position: absolute; display: grid; place-items: center; will-change: transform, opacity; }
+#fx-layer .fly.coin { width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe28a, var(--gold) 55%, #b8891f); color: #6b4a07; font: 900 .78rem/1 var(--f-body); box-shadow: 0 2px 4px rgba(0,0,0,.4); }
+#fx-layer .fly.coin.small { width: 14px; height: 14px; font-size: .52rem; opacity: .9; }
+#fx-layer .fly.card-token { width: 44px; height: 44px; border-radius: 50%; background: #fbf8f0; box-shadow: 0 0 0 2px var(--gold), 0 6px 14px rgba(0,0,0,.45); }
+#fx-layer .fly.card-token img { width: 78%; height: 78%; object-fit: contain; }
+#fx-layer .dot { position: absolute; border-radius: 50%; will-change: transform, opacity; }
+#fx-layer .spark { position: absolute; color: #ffe28a; font-size: 16px; text-shadow: 0 0 6px rgba(255,214,102,.9); will-change: transform, opacity; }
+
+/* 4: impacts */
+.screen-flash { position: fixed; inset: 0; pointer-events: none; }
+.screen-flash.loss-edges { box-shadow: inset 0 0 110px 26px rgba(255,64,64,.55); animation: edge-flash .52s ease-out forwards; }
+.screen-flash.death-flash { background: rgba(255,50,50,.32); box-shadow: inset 0 0 160px 50px rgba(255,40,40,.7); animation: edge-flash .6s ease-out forwards; }
+@keyframes edge-flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+.shield-ring { position: absolute; border-radius: 50%; border: 3px solid var(--save); box-shadow: 0 0 18px 4px rgba(182,156,242,.7), inset 0 0 14px rgba(182,156,242,.6); color: var(--save); animation: shield-pop .85s cubic-bezier(.2,1.4,.4,1) forwards; }
+.shield-ring svg { position: absolute; right: -8px; top: -8px; width: 28px; height: 28px; padding: 3px; border-radius: 50%; background: #241c3c; filter: drop-shadow(0 0 4px rgba(182,156,242,.9)); }
+@keyframes shield-pop { 0% { transform: scale(.55); opacity: 0; } 30% { transform: scale(1.08); opacity: 1; } 65% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.04); opacity: 0; } }
+@keyframes hit { 0% { transform: none; filter: none; } 25% { transform: translateX(9px) rotate(5deg) scale(.94); filter: brightness(1.6) saturate(1.3); } 60% { transform: translateX(-3px) rotate(-1deg); } 100% { transform: none; filter: none; } }
+@keyframes bonk { 0% { transform: none; } 35% { transform: scale(.88); } 70% { transform: scale(1.06); } 100% { transform: none; } }
+@keyframes smug { 0%, 100% { transform: none; } 25% { transform: translateY(-6px) rotate(-3deg); } 50% { transform: none; } 75% { transform: translateY(-4px) rotate(2deg); } }
+html:not(.calm) .fx-hit { animation: hit .32s ease-out; }
+html:not(.calm) .fx-bonk { animation: bonk .26s ease-out; }
+html:not(.calm) .fx-smug { animation: smug .55s ease-in-out; }
+
+/* 3: pump: both fists bob twice, fast */
+.result.pumping { min-height: 190px; }
+.pump-row { display: flex; align-items: center; gap: 22px; justify-content: center; }
+html:not(.calm) .pump-fist { display: inline-block; animation: pump .2s ease-in-out both; }
+html:not(.calm) .pump-fist.them { animation-delay: 0s; transform: scaleX(-1); }
+@keyframes pump { 0%, 50%, 100% { transform: translateY(0); } 25%, 75% { transform: translateY(-14px); } }
+html:not(.calm) .throw.pressed { transform: translateY(3px) scale(.97); box-shadow: 0 3px 0 rgba(0,0,0,.35); border-color: var(--gold); }
+
+/* 5: opponent breathes, very gently */
+html:not(.calm) .opp-head .portrait .asset-img, html:not(.calm) .service .portrait .asset-img { animation: breathe 4.8s ease-in-out infinite; transform-origin: 50% 85%; }
+@keyframes breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.5px) scale(1.015); } }
+
+/* 6: danger tint at 0 Extra Lives: soft red edges, slow pulse */
+html.danger body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 5; box-shadow: inset 0 0 90px 10px rgba(255,70,70,.17); }
+html.danger:not(.calm) body::before { animation: danger-pulse 5.5s ease-in-out infinite; }
+@keyframes danger-pulse { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+
+/* 8 + 9: progress bar */
+.progress-track { position: relative; }
+.progress-fill { transition: width .38s cubic-bezier(.3,1.25,.5,1); }
+html:not(.calm) .progress-track.near { animation: near-glow .5s ease-out; }
+@keyframes near-glow { 0% { box-shadow: 0 0 0 0 rgba(232,185,73,.8); } 100% { box-shadow: 0 0 0 7px rgba(232,185,73,0); } }
+.progress-track::after { content: ''; position: absolute; inset: 0; transform: translateX(-110%); background: linear-gradient(100deg, transparent 0%, rgba(255,240,190,.0) 30%, rgba(255,245,210,.95) 50%, rgba(255,240,190,0) 70%, transparent 100%); pointer-events: none; }
+html:not(.calm) .progress-track.arrive { animation: arrive-glow .9s ease-out; }
+html:not(.calm) .progress-track.arrive::after { animation: sweep .8s cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes sweep { to { transform: translateX(110%); } }
+@keyframes arrive-glow { 0% { box-shadow: 0 0 0 0 rgba(232,185,73,.9); } 40% { box-shadow: 0 0 14px 4px rgba(232,185,73,.7); } 100% { box-shadow: 0 0 0 0 rgba(232,185,73,0); } }
+
+/* 11: card dealing */
+html:not(.calm) .up-card.deal { animation: deal-in .42s cubic-bezier(.2,1.1,.4,1) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes deal-in { 0% { opacity: 0; transform: translateY(-46px) rotate(calc(-7deg + var(--i, 0) * 4deg)) scale(.9); } 100% { opacity: 1; transform: none; } }
+
+/* 13: legendary shimmer (a slow gold sweep; stronger once when dealt) */
+.up-card.rarity-card-legendary:not(.sold-card) { position: relative; overflow: hidden; }
+.up-card.rarity-card-legendary:not(.sold-card)::after { content: ''; position: absolute; inset: -20% -60%; pointer-events: none; background: linear-gradient(105deg, transparent 40%, rgba(255,226,138,.0) 44%, rgba(255,226,138,.45) 50%, rgba(255,226,138,0) 56%, transparent 60%); transform: translateX(-60%); }
+html:not(.calm) .up-card.rarity-card-legendary:not(.sold-card)::after { animation: shimmer 4.5s ease-in-out 1.2s infinite; }
+html:not(.calm) .up-card.rarity-card-legendary.reveal::after { animation: shimmer 1.1s ease-out, shimmer 4.5s ease-in-out 2s infinite; }
+@keyframes shimmer { 0% { transform: translateX(-60%); } 35%, 100% { transform: translateX(60%); } }
+
+/* 12: bought stamp */
+.sold { display: inline-block; }
+html:not(.calm) .sold.stamp-in { animation: stamp-in .38s cubic-bezier(.3,1.6,.5,1) both; color: var(--loss); }
+@keyframes stamp-in { 0% { transform: scale(2.8) rotate(-18deg); opacity: 0; } 60% { transform: scale(.92) rotate(-6deg); opacity: 1; } 100% { transform: scale(1) rotate(-6deg); } }
+html:not(.calm) .up-card.just-bought { animation: thud .3s ease-out .12s; }
+@keyframes thud { 0%, 100% { transform: none; } 40% { transform: translateY(3px) scale(.985); } }
+
+/* 10: dreaded gap count-up */
+.stretch-num { display: inline-block; transform-origin: 0 70%; }
+.stretch-num.dread-hold { opacity: .12; }
+html:not(.calm) .stretch-num.dread-step { animation: dread-step .13s ease-out both; }
+html:not(.calm) .stretch-num.dread-slam { animation: dread-slam .55s cubic-bezier(.2,1.6,.4,1) both; }
+@keyframes dread-step { 0% { transform: scale(calc(var(--dread, 1) * 1.08)) translateX(-2px) rotate(-1.5deg); } 50% { transform: scale(var(--dread, 1)) translateX(3px) rotate(1.5deg); } 100% { transform: scale(var(--dread, 1)); } }
+@keyframes dread-slam { 0% { transform: scale(2.2) rotate(-4deg); text-shadow: 0 0 24px rgba(255,80,80,.9); } 55% { transform: scale(.94) rotate(1deg); } 100% { transform: scale(1); text-shadow: none; } }
+
+/* 14 + 15: title reveals */
+.foe-stamp.reveal-wait { opacity: 0; }
+html:not(.calm) .medal-art.reveal-wait { opacity: .15; transform: scale(.6); }
+html:not(.calm) .foe-stamp.stamp-slam { animation: foe-stamp .42s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes foe-stamp { 0% { transform: translate(-50%, -50%) rotate(-30deg) scale(3.2); opacity: 0; } 60% { transform: translate(-50%, -50%) rotate(-14deg) scale(.9); opacity: 1; } 100% { transform: translate(-50%, -50%) rotate(-16deg) scale(1); } }
+html:not(.calm) .foe.foe-thud { animation: thud .32s ease-out .15s; }
+html:not(.calm) .medal-art.trophy-spin { animation: trophy-spin 1s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes trophy-spin { 0% { transform: perspective(300px) rotateY(0) scale(.6); filter: brightness(2); } 70% { transform: perspective(300px) rotateY(700deg) scale(1.15); filter: brightness(1.4); } 100% { transform: perspective(300px) rotateY(720deg) scale(1); filter: none; } }
+
+/* 16: death transition */
+#app { transition: filter .8s ease, transform 1.6s cubic-bezier(.3,0,.2,1); }
+html.dying #app { pointer-events: none; transform-origin: var(--death-ox, 50%) var(--death-oy, 30%); }
+html.dying:not(.calm) #app { animation: death-shake .42s ease-out; }
+html.dying-grey #app { filter: grayscale(1) brightness(.75); transform: scale(1.06); }
+@keyframes death-shake { 0%, 100% { transform: none; } 15% { transform: translate(-10px, 4px) rotate(-.6deg); } 30% { transform: translate(9px, -5px) rotate(.5deg); } 45% { transform: translate(-7px, 3px); } 60% { transform: translate(5px, -2px); } 80% { transform: translate(-2px, 1px); } }
+.death-title { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 16px; }
+.death-word { font: 900 clamp(3.6rem, 16vw, 9rem)/.85 var(--f-display); text-transform: uppercase; color: var(--loss); text-shadow: 0 6px 0 #3a0d0a, 0 0 40px rgba(255,80,80,.55); animation: death-slam .5s cubic-bezier(.2,1.5,.4,1) both; }
+.death-quip { font: italic 700 clamp(1.1rem, 4vw, 1.6rem)/1.2 var(--f-body); color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,.8); animation: fade-up .5s ease-out .25s both; }
+@keyframes death-slam { 0% { transform: scale(3) rotate(-6deg); opacity: 0; } 55% { transform: scale(.94) rotate(1deg); opacity: 1; } 100% { transform: scale(1) rotate(-2deg); } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.death-veil { position: fixed; inset: 0; background: var(--felt-deep); animation: veil .45s ease-in forwards; }
+.death-veil.calm-veil { animation-duration: .6s; }
+@keyframes veil { from { opacity: 0; } to { opacity: 1; } }
+
+/* power-up mechanic badge stays legible on the compact phone "Bought" row */
+html:not(.fit) .sold-card .card-icon .mech { display: none; }
+
+/* belt and braces: with reduced motion, kill any remaining animation */
+html.calm *, html.calm *::before, html.calm *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+html.calm .stretch-num.dread-hold { animation: none !important; opacity: 1 !important; }
+
+html.dying #go-over { visibility: hidden; }
+.death-title { background: radial-gradient(ellipse 70% 32% at 50% 50%, rgba(10,20,17,.88) 0%, rgba(10,20,17,.6) 55%, rgba(10,20,17,0) 100%); }
+
+html.dying, html.dying body { overflow-x: clip; }
+.up-card.dealing { pointer-events: none; }

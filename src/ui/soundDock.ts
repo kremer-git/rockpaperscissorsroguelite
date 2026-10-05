@@ -29,7 +29,10 @@ export function soundDock(app: App): HTMLElement {
       slider('vol-sfx', 'Effects', 'sfx'),
       h('label', { class: 'sd-row sd-mute', for: 'sound-mute' },
         h('input', { type: 'checkbox', id: 'sound-mute', checked: a.muted, onchange: () => app.actions.setPrefs((p) => { p.audio.muted = !p.audio.muted; applyAudioSettings(p.audio); }) }),
-        h('span', null, 'Mute everything'), h('kbd', null, 'V'))) : null,
+        h('span', null, 'Mute everything'), h('kbd', null, 'V')),
+      h('label', { class: 'sd-row sd-mute', for: 'reduce-anim' },
+        h('input', { type: 'checkbox', id: 'reduce-anim', checked: app.prefs.effects === 'reduced', onchange: () => app.actions.setPrefs((p) => { p.effects = p.effects === 'reduced' ? 'full' : 'reduced'; }) }),
+        h('span', null, 'Reduce animations'))) : null,
     h('button', {
       class: 'btn small sd-toggle', id: 'sound-toggle', type: 'button', 'aria-expanded': String(app.soundOpen),
       'aria-label': a.muted ? 'Sound is muted. Open sound settings' : 'Open sound settings',
