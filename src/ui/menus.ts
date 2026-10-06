@@ -57,17 +57,14 @@ export function titleScreen(app: App): HTMLElement {
     h('label', { class: `mode-toggle ${hard ? 'on' : ''}`, for: 'hard-mode' },
       h('input', { type: 'checkbox', id: 'hard-mode', checked: hard, onchange: () => app.actions.setPrefs((q) => { q.hardMode = !q.hardMode; }) }),
       h('span', null, h('b', null, 'Hard Mode'), hard ? ': start with 0 Extra Lives. Good luck.' : ': start with 0 Extra Lives instead of 3.'), h('kbd', null, 'M')),
-    h('form', { class: 'seed-form', onsubmit: (e: Event) => { e.preventDefault(); startSeeded(); } },
-      h('label', { for: 'seed-input', class: 'small muted' }, 'Play a specific seed'),
-      h('input', { id: 'seed-input', type: 'text', inputmode: 'text', autocomplete: 'off', placeholder: 'e.g. 12345 or “lizard spock”', maxlength: '40', class: 'seed-input' }),
-      h('button', { class: 'btn', id: 'start-seed', type: 'submit' }, 'Start seeded run')),
-    h('p', { class: 'small muted seed-help' }, 'Same seed + same choices = the same run, so you can share a run or replay one.'),
+    h('div', { class: 'seed-block' },
+      h('form', { class: 'seed-form', onsubmit: (e: Event) => { e.preventDefault(); startSeeded(); } },
+        h('label', { for: 'seed-input', class: 'small muted' }, 'Play a specific seed'),
+        h('input', { id: 'seed-input', type: 'text', inputmode: 'text', autocomplete: 'off', placeholder: 'e.g. 12345 or “lizard spock”', maxlength: '40', class: 'seed-input' }),
+        h('button', { class: 'btn', id: 'start-seed', type: 'submit' }, 'Start seeded run')),
+      h('p', { class: 'small muted seed-help' }, 'Same seed + same choices = the same run, so you can share a run or replay one.')),
     shelf,
     collection,
-    h('ul', { class: 'title-facts small' },
-      h('li', null, `${UPGRADES.length} upgrades across three skill trees`),
-      h('li', null, `${OPPONENTS.length} opponents with learnable habits`),
-      h('li', null, '0 meta-progression. Trophies are just for bragging.')),
     __DEBUG__ && app.debugEnabled ? h('p', { class: 'small muted foot' }, 'Press ` for debug mode.') : null);
 }
 
@@ -100,7 +97,8 @@ const STEPS: [string, string][] = [
   ['New opponent, fresh memory', 'Each store brings a new opponent who knows nothing about you. Tendencies are habits, not rules: every opponent can surprise you now and then. When a tendency mentions “your previous throw” or “two rounds ago”, it only counts rounds against that opponent, so their first throw after a store reacts to nothing. Your own streak upgrades (Muscle Memory, Momentum…) do carry over.'],
   ['Build something', 'Rock makes Rock safer and rewards stubbornness. Paper reads the opponent: tendencies, hunches, leaks. Scissors turns risk into money. Mix freely.'],
   ['The gaps grow', 'Stores come after 1, 2, 3, 5, 8, 13, 21, 34, 55, 89… rounds. There is no cap and no final boss. There is only the next gap.'],
-  ['Nothing is rigged', 'Opponents never look at how long you’ve survived, how rich you are or how strong your build is. Their odds depend only on the history you can see. Everyone appears once before anyone repeats. Your build gets strong; the gaps get longer; eventually probability wins. One more run?'],
+  ['Nothing is rigged', 'Opponents never look at how long you’ve survived, how rich you are or how strong your build is. Their odds depend only on the history you can see. Everyone appears once before anyone repeats. Your build gets strong; the gaps get longer; eventually probability wins.'],
+  ['What you’re in for', `${UPGRADES.length} upgrades across three skill trees. ${OPPONENTS.length} opponents with habits you can learn. Zero meta-progression: every run starts from scratch, and the trophies and Opponents Defeated collection are just for bragging. One more run?`],
 ];
 
 export function howtoScreen(app: App): HTMLElement {

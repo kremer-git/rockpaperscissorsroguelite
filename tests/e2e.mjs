@@ -440,6 +440,21 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
   await dp.close();
 }
 
+// ---------- title tidy-up ----------
+for (const [w, hgt] of [[1366, 768], [390, 844]]) {
+  const page = await open(w, hgt);
+  check(`${w}px title: the facts list is gone`, !(await page.$('.title-facts')) && !(await page.innerText('body')).includes('meta-progression'));
+  const gap = await page.evaluate(() => document.querySelector('.seed-help').getBoundingClientRect().top - document.querySelector('.seed-form').getBoundingClientRect().bottom);
+  check(`${w}px title: seed note has breathing room below the seed box`, gap >= 6, `${gap.toFixed(1)}px`);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/title-tidy-${w}.png` });
+  await page.click('#howto');
+  for (let i = 0; i < 12 && await page.$('#howto-next'); i++) { await page.click('#howto-next'); await page.waitForTimeout(40); }
+  const last = await page.innerText('.howto-card');
+  check(`${w}px How to Play ends with the summary page`, /What you’re in for/i.test(last) && /51 upgrades across three skill trees/.test(last) && /20 opponents/.test(last) && /meta-progression/.test(last) && /One more run\?/.test(last), last.slice(0, 120).replace(/\n/g, ' | '));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/howto-last-${w}.png` });
+  await page.close();
+}
+
 check('no page errors', errors.length === 0, errors.join(' | '));
 await browser.close();
 console.log(failures ? `\n${failures} FAILED` : '\nALL PASSED');

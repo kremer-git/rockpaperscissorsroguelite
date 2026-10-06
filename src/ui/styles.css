@@ -73,8 +73,6 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 .logo-sub { font: 800 clamp(1.1rem, 3vw, 1.6rem)/1 var(--f-display); letter-spacing: .5em; text-transform: uppercase; color: var(--gold); margin: 12px 0 0; padding-left: .5em; }
 .tagline { max-width: 52ch; color: var(--muted); margin: 14px auto 0; }
 .title-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.title-facts { list-style: none; padding: 0; margin: 0; display: flex; gap: 8px 22px; flex-wrap: wrap; justify-content: center; color: var(--muted); }
-.title-facts li::before { content: '◆ '; color: var(--gold); }
 .foot { text-align: center; }
 
 /* ---------- how to ---------- */
@@ -320,7 +318,8 @@ h1, h2, h3 { text-wrap: balance; margin: 0; }
 /* ---------- title seed ---------- */
 .seed-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: center; }
 .seed-input { background: var(--panel); color: var(--ink); border: 2px solid var(--line); border-radius: 8px; padding: .5em .8em; width: 14em; max-width: 100%; }
-.seed-help { margin: -18px 0 0; }
+.seed-block { display: grid; gap: 8px; justify-items: center; }
+.seed-help { margin: 0; text-align: center; }
 .seed-line { display: flex; gap: 8px; align-items: center; justify-content: center; }
 
 /* ---------- fit-to-screen (desktop): the run and store screens fill exactly one viewport ---------- */
