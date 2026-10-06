@@ -16,6 +16,9 @@ const ASSETS: Record<string, AssetDef> = {
   'move.R': { glyph: '●', label: 'Rock', tint: '--rock', image: 'art/move-R.webp' },
   'move.P': { glyph: '▭', label: 'Paper', tint: '--paper', image: 'art/move-P.webp' },
   'move.S': { glyph: '✂', label: 'Scissors', tint: '--scissors', image: 'art/move-S.webp' },
+  // The pump: a hand-drawn fist for each side (assets/art/fist-*.svg; replace the files to swap the art)
+  'ui.fist.you': { glyph: '✊', label: 'Your fist', image: 'art/fist-you.svg' },
+  'ui.fist.them': { glyph: '✊', label: 'Their fist', image: 'art/fist-them.svg' },
   // Trophies (title-screen shelf), keyed by the round count that unlocks them
   'award.100': { glyph: '100', label: '100-round trophy', image: 'art/award-100.webp' },
   'award.200': { glyph: '200', label: '200-round trophy', image: 'art/award-200.webp' },

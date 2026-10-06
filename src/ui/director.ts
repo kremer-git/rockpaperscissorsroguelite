@@ -3,7 +3,8 @@
 import type { App } from './app';
 import type { GameState, Move } from '../core/types';
 import { h } from './dom';
-import { moveChip, treeOf } from './components';
+import { treeOf } from './components';
+import { asset } from './assets';
 import { playSynth, setMusic } from './audio';
 import { burst, coinsToHud, countUp, flashScreen, fly, layer, motionOK, onScreen, replay, shieldAround, sleep, sparkle } from './juice';
 import { foeStatus } from './awards';
@@ -24,9 +25,9 @@ export function pump(m: Move): Promise<void> {
   if (!res) return sleep(PUMP_MS);
   res.classList.add('pumping');
   res.replaceChildren(h('div', { class: 'pump-row' },
-    h('span', { class: 'pump-fist you' }, moveChip('R', 'big')),
+    h('span', { class: 'pump-fist you' }, asset('ui.fist.you', 'fist')),
     h('span', { class: 'vs' }, 'vs'),
-    h('span', { class: 'pump-fist them' }, moveChip('R', 'big'))));
+    h('span', { class: 'pump-fist them' }, asset('ui.fist.them', 'fist'))));
   return sleep(PUMP_MS);
 }
 

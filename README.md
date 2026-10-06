@@ -144,7 +144,7 @@ Cosmetic animations and synthesized sounds layered on top of the game (`src/ui/j
 
 | When | What you see / hear |
 |---|---|
-| You throw | ~200 ms "pump": both fists bob twice, then the reveal. Further presses (and ALL-IN) are ignored until it lands |
+| You throw | ~200 ms "pump": two hand-drawn fists (`assets/art/fist-you.svg`, `fist-them.svg`; replace the files to swap in custom art) bob and tilt toward each other twice, then the reveal. Further presses (and ALL-IN) are ignored until it lands |
 | Win | Opponent's throw and portrait jolt, dots burst in your tree's colour, coins arc to the coin counter, which counts up (hit + coin ticks) |
 | Tie | Both throws bonk, one or two small coins |
 | Loss (life used) | Red screen edges flash, the clash shakes, the opponent bounces smugly |

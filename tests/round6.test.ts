@@ -75,7 +75,7 @@ test('build ordering prefs are gone; the collection remembers whether it is open
 });
 
 test('throw and trophy art: all eight files exist as small WebP images', () => {
-  const files = readdirSync('assets/art').sort();
+  const files = readdirSync('assets/art').filter((f) => f.endsWith('.webp')).sort();
   assert.deepEqual(files, ['award-100.webp', 'award-200.webp', 'award-300.webp', 'award-400.webp', 'award-500.webp', 'move-P.webp', 'move-R.webp', 'move-S.webp']);
   for (const f of files) {
     const b = readFileSync(`assets/art/${f}`);

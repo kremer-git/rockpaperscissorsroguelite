@@ -581,8 +581,13 @@ html:not(.calm) .fx-smug { animation: smug .55s ease-in-out; }
 .result.pumping { min-height: 190px; }
 .pump-row { display: flex; align-items: center; gap: 22px; justify-content: center; }
 html:not(.calm) .pump-fist { display: inline-block; animation: pump .2s ease-in-out both; }
-html:not(.calm) .pump-fist.them { animation-delay: 0s; transform: scaleX(-1); }
-@keyframes pump { 0%, 50%, 100% { transform: translateY(0); } 25%, 75% { transform: translateY(-14px); } }
+html:not(.calm) .pump-fist.them { animation-delay: 0s; }
+.pump-fist { width: 132px; height: 104px; display: inline-grid; place-items: center; }
+.pump-fist .fist { width: 100%; height: 100%; object-fit: contain; display: block; filter: drop-shadow(0 3px 2px rgba(0,0,0,.35)); }
+.pump-fist.them .fist { transform: scaleX(-1); } /* the two fists face each other */
+@media (max-width: 760px) { .pump-fist { width: 100px; height: 80px; } }
+@keyframes pump { 0%, 50%, 100% { transform: translateY(0) rotate(0); } 25%, 75% { transform: translateY(-16px) rotate(var(--tilt, -8deg)); } }
+.pump-fist.them { --tilt: 8deg; }
 html:not(.calm) .throw.pressed { transform: translateY(3px) scale(.97); box-shadow: 0 3px 0 rgba(0,0,0,.35); border-color: var(--gold); }
 
 /* 5: opponent breathes, very gently */

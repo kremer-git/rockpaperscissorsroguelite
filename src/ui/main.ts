@@ -240,7 +240,7 @@ if (__DEBUG__) (window as unknown as { __fx: unknown }).__fx = { sfx: sfxLog, au
 setEffectsReduced(app.prefs.effects === 'reduced');
 // Warm the image cache so pictures never blink in when a screen re-renders.
 window.setTimeout(() => {
-  const srcs = ['art/move-R.webp', 'art/move-P.webp', 'art/move-S.webp', ...[100, 200, 300, 400, 500].map((n) => `art/award-${n}.webp`), ...OPPONENTS.map((o) => `portraits/${o.id}.jpg`)];
+  const srcs = ['art/fist-you.svg', 'art/fist-them.svg', 'art/move-R.webp', 'art/move-P.webp', 'art/move-S.webp', ...[100, 200, 300, 400, 500].map((n) => `art/award-${n}.webp`), ...OPPONENTS.map((o) => `portraits/${o.id}.jpg`)];
   for (const src of srcs) { const im = new Image(); im.src = src; void im.decode?.().catch(() => undefined); }
 }, 300);
 applyAudioSettings(app.prefs.audio);
