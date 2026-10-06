@@ -6,7 +6,7 @@ import { h } from './dom';
 import { treeOf } from './components';
 import { asset } from './assets';
 import { playSynth, setMusic } from './audio';
-import { burst, coinsToHud, countUp, flashScreen, fly, layer, motionOK, onScreen, replay, shieldAround, sleep, sparkle } from './juice';
+import { burst, coinsToHud, countUp, flashScreen, layer, motionOK, replay, shieldAround, sleep, sparkle } from './juice';
 import { foeStatus } from './awards';
 import { OPPONENTS } from '../content/opponents';
 
@@ -177,12 +177,7 @@ let dealtKey = '';
 let dealStart = 0;
 let dealSlots: string[] = [];
 /** A new run starts: store effects (deal, gap count-up) are keyed per run, so forget the last run's keys. */
-export function newRun(): void { dealtKey = ''; dreadVisit = -1; dreadState = 'none'; dreadObserver?.disconnect(); dreadObserver = null; }
-// Dread count-up state for the current store visit. The store re-renders on every purchase (new DOM), so a
-// pending count-up re-attaches to the fresh number each render instead of watching a detached element.
-let dreadVisit = -1;
-let dreadState: 'none' | 'pending' | 'playing' | 'done' = 'none';
-let dreadObserver: IntersectionObserver | null = null;
+export function newRun(): void { dealtKey = ''; }
 export function store(app: App): void {
   const s = app.state;
   if (!s?.store) return;
@@ -217,22 +212,6 @@ export function store(app: App): void {
       }
     });
   }
-  // 10: dreaded gap count-up (once per store visit, when the number is actually on screen)
-  const num = document.querySelector<HTMLElement>('.stretch-num');
-  const gap = Number(num?.textContent?.replace(/\D/g, '') ?? 0);
-  if (dreadVisit !== s.storesVisited) {
-    dreadVisit = s.storesVisited;
-    dreadState = num && motion && gap >= 34 ? 'pending' : 'done';
-  }
-  if (dreadState === 'pending' && num) {
-    num.classList.add('dread-hold');
-    dreadObserver?.disconnect();
-    dreadObserver = observeOnce(num, () => {
-      if (dreadState !== 'pending') return;
-      if (!motionOK()) { dreadState = 'done'; document.querySelector('.stretch-num')?.classList.remove('dread-hold'); return; }
-      dreadState = 'playing'; void dread(gap).then(() => { dreadState = 'done'; });
-    });
-  }
 }
 
 function observeOnce(el: Element, run: () => void): IntersectionObserver | null {
@@ -245,42 +224,70 @@ function observeOnce(el: Element, run: () => void): IntersectionObserver | null 
   return io;
 }
 
-async function dread(gap: number): Promise<void> {
+/**
+ * 10: the dreaded gap. The store doesn't say how long the next stretch is; pressing Continue reveals it
+ * with a Fibonacci count-up (drums, shake, the number swelling), then the rounds start. Tap to skip.
+ */
+let revealing = false;
+export function isRevealing(): boolean { return revealing; }
+export function gapReveal(gap: number, vs: string): Promise<void> {
+  if (!motionOK()) return Promise.resolve();
+  revealing = true;
+  const num = h('div', { class: 'gr-num num' }, '1');
+  const sub = h('div', { class: 'gr-sub' }, `round${gap === 1 ? '' : 's'} vs ${vs}`);
+  const box = h('div', { class: `gap-reveal ${gap >= 34 ? 'scary' : ''}`, id: 'gap-reveal', role: 'status', 'aria-label': `Next stretch: ${gap} rounds` },
+    h('div', { class: 'gr-card' }, h('div', { class: 'eyebrow gr-eye' }, 'Next stretch'), num, sub));
+  document.body.append(box);
   const fib = [1, 2];
   while (fib[fib.length - 1] < gap) fib.push(fib[fib.length - 1] + fib[fib.length - 2]);
   const steps = fib.filter((n) => n < gap).concat(gap);
-  for (let i = 0; i < steps.length; i++) {
-    const el = document.querySelector<HTMLElement>('.stretch-num');
-    if (!el) return; // left the store
-    el.classList.remove('dread-hold');
-    const last = i === steps.length - 1;
-    el.textContent = `${steps[i]} rounds`;
-    const k = (i + 1) / steps.length;
-    el.style.setProperty('--dread', String(1 + k * 0.7));
-    replay(el, last ? 'dread-slam' : 'dread-step');
-    playSynth(last ? 'drumBig' : 'drum', last ? 1 : 0.85 + k * 0.4);
-    await sleep(last ? 0 : Math.max(85, 150 - i * 6));
-  }
-  window.setTimeout(() => document.querySelector<HTMLElement>('.stretch-num')?.style.removeProperty('--dread'), 700);
+  let skipped = false;
+  return new Promise<void>((resolve) => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return; finished = true;
+      document.removeEventListener('pointerdown', skip, true); document.removeEventListener('keydown', skip, true);
+      revealing = false;
+      resolve();
+      // fade out over the freshly drawn rounds screen
+      box.classList.add('out');
+      window.setTimeout(() => box.remove(), 260);
+    };
+    const skip = (e: Event) => {
+      if (e instanceof KeyboardEvent && ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
+      e.preventDefault(); e.stopPropagation();
+      if (skipped) return; skipped = true;
+      num.textContent = String(gap); num.style.setProperty('--dread', '1.6');
+      window.setTimeout(finish, 120);
+    };
+    document.addEventListener('pointerdown', skip, true); document.addEventListener('keydown', skip, true);
+    void (async () => {
+      await sleep(140);
+      for (let i = 0; i < steps.length && !skipped; i++) {
+        const last = i === steps.length - 1;
+        num.textContent = String(steps[i]);
+        const k = steps.length === 1 ? 1 : (i + 1) / steps.length;
+        num.style.setProperty('--dread', String(1 + k * 0.6));
+        replay(num, last ? 'dread-slam' : 'dread-step');
+        playSynth(last ? 'drumBig' : 'drum', last ? 1 : 0.85 + k * 0.4);
+        if (last) {
+          sub.classList.add('in');
+          if (gap >= 34) replay(box, 'fx-shake');
+          await sleep(gap >= 21 ? 900 : 650);
+        } else await sleep(Math.max(80, 140 - i * 6));
+      }
+      if (!skipped) finish();
+    })();
+  });
 }
 
-/** 12: the bought card gets a stamp, and a copy of its icon flies to the build list. */
-export function bought(slot: number, iconRect: DOMRect | null): void {
+/** 12: the bought card gets a stamp (no flying token: it pulled the eye away from the store). */
+export function bought(slot: number): void {
   const card = document.querySelector<HTMLElement>(`.offers .up-card[data-slot="${slot}"]`);
   playSynth('stamp');
   if (!motionOK() || !card) return;
   replay(card.querySelector('.sold'), 'stamp-in');
   replay(card, 'just-bought');
-  const icon = card.querySelector('.card-icon');
-  const from = iconRect ?? icon?.getBoundingClientRect() ?? null;
-  const summary = document.querySelector('.store-build > summary');
-  if (!from || !summary) return;
-  let to = summary.getBoundingClientRect();
-  // On phones the build list is far below: aim at the bottom edge so it reads as "into your build, below".
-  if (!onScreen(to)) to = new DOMRect(innerWidth / 2 - 10, innerHeight - 24, 20, 20);
-  const img = card.querySelector('.card-icon img')?.getAttribute('src');
-  void fly({ from, to, n: 1, cls: 'card-token', html: img ? `<img src="${img}" alt="">` : '', dur: 620, arc: 90 })
-    .then(() => replay(summary, 'fx-bump'));
 }
 
 // ---------------- title: defeated stamps and trophy unlocks play once ----------------

@@ -10,6 +10,7 @@ import { buyLife, buyUpgrade, canBuyLife, eligibleUpgrades, rerollOpponent, rero
 /** Offers can become unbuyable mid-visit (No Thoughts vs intel). */
 const buyable = (s: GameState, id: string) => eligibleUpgrades(s).some((d) => d.id === id);
 import { getUpgrade, owned } from '../core/registry';
+import { ROUTINE_MAX, routineBonus, routineOf } from '../content/upgrades';
 import { getOpponent } from '../core/opponentModel';
 import { CONFIG } from '../core/config';
 import { nextRandom } from '../core/rng';
@@ -199,10 +200,20 @@ export const POLICIES: Policy[] = [
   },
   {
     id: 'paper', label: 'Paper-Focused',
-    chooseMove: (s, rnd) => ({ move: safeMove(s, belief(s).dist, rnd), allIn: false }),
+    chooseMove: (s, rnd) => {
+      const b = belief(s);
+      const safe = safeMove(s, b.dist, rnd);
+      // Show Your Work: follow the routine when it costs little (the read is weak, or the routine throw is nearly as safe).
+      const sw = owned(s, 'show-your-work');
+      if (sw && routineBonus(sw) < ROUTINE_MAX) {
+        const want = routineOf(sw)[sw.data.step ?? 0];
+        if (throwCost(s, want) <= s.currency && lossAfterSaves(s, want, b.dist) <= lossAfterSaves(s, safe, b.dist) + 0.06) return { move: want, allIn: false };
+      }
+      return { move: safe, allIn: false };
+    },
     shop: (s, rnd) => genericShop(s, {
       tree: { rock: 0.6, paper: 3, scissors: 0.6 }, tags: { info: 2.5, prediction: 3, save: 2, economy: 0.5 },
-      plan: ['do-your-research', 'predictive-analytics', 'spreadsheet', 'study-session', 'paper-trail', 'due-diligence', 'contingency-plan', 'mastermind', 'read-the-instructions', 'peer-review', 'compound-interest', 'notes-app', 'cold-read', 'i-have-sources', 'five-year-plan', 'confirmation-bias'],
+      plan: ['do-your-research', 'predictive-analytics', 'spreadsheet', 'study-session', 'paper-trail', 'due-diligence', 'contingency-plan', 'mastermind', 'read-the-instructions', 'peer-review', 'compound-interest', 'show-your-work', 'cold-read', 'i-have-sources', 'five-year-plan', 'confirmation-bias'],
       lifeEagerness: 0.6, reserveFrac: 0.2, rerollStoreIfBelow: 1.2, opponentRerollTiers: ['nash'],
     }, rnd),
   },

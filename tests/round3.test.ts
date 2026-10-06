@@ -325,7 +325,7 @@ test('QA#1: No Thoughts and an intel upgrade in the same store can’t both be b
   const t = createRun({ seed: 1, startingLives: 1e6 });
   toStore(t); dbgAddCurrency(t, 1e6);
   t.store!.offers[0].upgradeId = 'no-thoughts';
-  t.store!.offers[1].upgradeId = 'notes-app';
+  t.store!.offers[1].upgradeId = 'show-your-work';
   buyUpgrade(t, 1);
   assert.throws(() => buyUpgrade(t, 0), /can’t be combined/);
   void eligibleUpgrades;

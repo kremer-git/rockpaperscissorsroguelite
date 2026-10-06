@@ -4,17 +4,18 @@ import { asset } from './assets';
 import { buildPanel, upgradeCard } from './components';
 import { getUpgrade, owned } from '../core/registry';
 import { lifePrice, opponentRerollPrice, storeRerollPrice, upgradePrice, maxLives } from '../core/rules';
-import { canBuyLife, curveGap, eligibleUpgrades, rerollableOffers } from '../core/engine';
+import { canBuyLife, eligibleUpgrades, rerollableOffers } from '../core/engine';
 import { getOpponent } from '../core/opponentModel';
 import { CONFIG } from '../core/config';
 import { intelFlags } from '../core/rules';
+import { foeStatus } from './awards';
 
 export function storeScreen(app: App): HTMLElement {
   const s = app.state!;
   const st = s.store!;
-  const nextGap = curveGap(s, s.stage + 1);
-  const afterGap = curveGap(s, s.stage + 2);
   const next = getOpponent(s.nextOpponentId);
+  // Never faced them: a mystery tile like the title screen's collection (the tendency can still be researched).
+  const unmet = foeStatus(app.progress, next.id) === 'unknown';
   const flagsNow = intelFlags(s);
   const researched = flagsNow.behaviourText && !flagsNow.hidden;
 
@@ -59,25 +60,28 @@ export function storeScreen(app: App): HTMLElement {
       h('p', { class: 'small' }, `Survive one loss. You have ${s.lives}. Each life you buy costs ${CONFIG.store.lifeGrowth}× the last one you bought.`,
         Number.isFinite(cap) ? ' No Safety Net: you can’t buy while you hold one.' : ''),
       h('button', { class: 'btn', id: 'buy-life', disabled: !lifeCheck.ok, onclick: () => app.actions.buyLife() },
-        lifeCheck.ok || lifeCheck.reason === 'Not enough coins' ? 'Buy a life' : 'Unavailable', lifeCheck.ok || lifeCheck.reason === 'Not enough coins' ? h('span', { class: 'price-chip num' }, `${fmt(lp)}¢`) : null, h('kbd', null, 'L')),
+        lifeCheck.ok || lifeCheck.reason === 'Not enough coins' ? 'Buy a life' : 'Unavailable', lifeCheck.ok || lifeCheck.reason === 'Not enough coins' ? h('span', { class: 'price-chip num' }, `${fmt(lp)}¢`) : null),
       !lifeCheck.ok && lifeCheck.reason !== 'Not enough coins' ? h('p', { class: 'small muted' }, lifeCheck.reason) : null),
     h('div', { class: 'service' },
       h('div', { class: 'service-head' }, asset('ui.reroll', 'service-glyph'), h('h3', null, 'Reroll store')),
       h('p', { class: 'small' }, rerollNote),
       h('button', { class: 'btn', id: 'reroll-store', disabled: unsold === 0 || s.currency < rr, onclick: () => app.actions.rerollStore() },
-        unsold === 0 ? 'Nothing left to reroll' : `Reroll ${n} unsold ${offerWord}`, unsold > 0 ? h('span', { class: 'price-chip num' }, rr === 0 ? 'FREE' : `${fmt(rr)}¢`) : null, h('kbd', null, 'X'))),
+        unsold === 0 ? 'Nothing left to reroll' : `Reroll ${n} unsold ${offerWord}`, unsold > 0 ? h('span', { class: 'price-chip num' }, rr === 0 ? 'FREE' : `${fmt(rr)}¢`) : null)),
     h('div', { class: 'service next-opp' },
-      h('div', { class: 'service-head' }, h('div', { class: 'portrait small' }, asset(next.portrait, 'portrait-glyph')),
-        h('div', null, h('div', { class: 'eyebrow' }, 'Next opponent'), h('h3', null, next.name), h('div', { class: 'small opp-title' }, next.title))),
+      h('div', { class: 'service-head' }, unmet
+          ? h('div', { class: 'portrait small foe-mystery', 'aria-label': 'Not met yet' }, '?')
+          : h('div', { class: 'portrait small' }, asset(next.portrait, 'portrait-glyph')),
+        h('div', null, h('div', { class: 'eyebrow' }, 'Next opponent'), h('h3', null, next.name), h('div', { class: 'small opp-title' }, unmet ? 'Not met yet' : next.title))),
       researched ? h('p', { class: 'small' }, h('b', null, `${next.archetype}: `), next.tell) : null,
       h('button', { class: 'btn', id: 'reroll-opp', disabled: s.currency < orr, onclick: () => app.actions.rerollOpponent() },
-        'Swap opponent', h('span', { class: 'price-chip num' }, `${fmt(orr)}¢`), h('kbd', null, 'O')),
+        'Swap opponent', h('span', { class: 'price-chip num' }, `${fmt(orr)}¢`)),
       h('p', { class: 'small muted' }, 'Gets pricier every time, all run long.')),
-    h('div', { class: `service stretch ${nextGap >= 34 ? 'scary' : ''}` },
+    // The length of the next stretch is a surprise: it is revealed (with drums) when you press Continue.
+    h('div', { class: 'service stretch' },
       h('div', { class: 'eyebrow' }, 'Next stretch'),
-      h('p', { class: 'stretch-num num' }, `${nextGap} rounds`),
-      h('p', { class: 'small' }, `vs ${next.name}. Then ${afterGap}.`, nextGap >= 55 ? ' This is fine.' : nextGap >= 21 ? ' Consider insurance.' : ''),
-      h('button', { class: 'btn primary', id: 'leave-store', onclick: () => app.actions.leaveStore() }, 'Continue', h('kbd', null, 'Enter'))));
+      h('p', { class: 'stretch-num num' }, '?? rounds'),
+      h('p', { class: 'small' }, `vs ${next.name}. How long? You find out when you continue. Gaps only grow.`),
+      h('button', { class: 'btn primary', id: 'leave-store', onclick: () => app.actions.leaveStore() }, 'Continue')));
 
   const interest = s.lastTriggers.filter((t) => t.source === 'compound-interest').map((t) => t.text).join(' ');
   return h('div', { class: 'screen store' },

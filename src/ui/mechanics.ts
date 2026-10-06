@@ -20,6 +20,7 @@ export const MECHANIC_LABEL: Record<Mechanic, string> = {
 /** The card's main mechanic, from its tags (first match wins, most specific first). */
 export function mechanicOf(d: Pick<UpgradeDef, 'tags'>): Mechanic {
   const t = new Set(d.tags ?? []);
+  if (t.has('pattern')) return 'scaling'; // Show Your Work: the point is that it grows
   if (t.has('charge')) return 'charge';
   if (t.has('lives')) return 'lives';
   if (t.has('save') || t.has('counterplay')) return 'save';

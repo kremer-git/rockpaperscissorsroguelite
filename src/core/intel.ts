@@ -5,7 +5,7 @@ import type { Dist, GameState, IntelFlags, IntelMemory, Move, OpponentDef, Round
 import { MOVES } from './types';
 import { beats, idx, normalize, outcomeProbs } from './rps';
 import { effectiveSaveChance, intelFlags, throwCost } from './rules';
-import { currentMood, getOpponent, relativeTo, shiftFrom } from './opponentModel';
+import { currentMood, getOpponent, lastRedeal, relativeTo, shiftFrom } from './opponentModel';
 
 // ---------------- Estimator (Spreadsheet / Predictive Analytics) ----------------
 
@@ -147,7 +147,7 @@ export function computePrediction(s: GameState, level: 1 | 2): RoundPrediction {
   const n = s.stageHistory.length;
   const confidence = n >= 10 && maxp >= 0.6 ? 'High' : n >= 5 && maxp >= 0.45 ? 'Medium' : 'Low';
   const predicted = MOVES[dist.indexOf(maxp)];
-  return { dist, predicted, recommended: recommendedMove(s, dist), confidence };
+  return { dist, predicted, recommended: recommendedMove(s, dist), confidence, thin: n < 5 };
 }
 
 // ---------------- Intel view for UI + simulator ----------------
@@ -271,6 +271,19 @@ export function guessFromTell(o: OpponentDef, h: RoundRecord[], now: RoundCue = 
   const l2 = h[h.length - 2];
   const fav = o.base[0] > o.base[1] && o.base[0] > o.base[2] ? 'R' : o.base[1] > o.base[0] && o.base[1] > o.base[2] ? 'P' : o.base[2] > o.base[0] && o.base[2] > o.base[1] ? 'S' : null;
   if (fav) return lean(fav as Move);
+  if (o.shuffledBase) {
+    // "One throw most, one sometimes, one rarely": rank what you've seen so far and expect the same ranking.
+    // Only what he has thrown since he last re-dealt counts.
+    const since = h.slice(lastRedeal(h, o.reshuffleAfterWins ?? 0));
+    if (since.length < 3) return null;
+    const c = [0, 0, 0];
+    since.forEach((r) => c[idx(r.opponent)]++);
+    const rank = [0, 1, 2].sort((a, b) => c[b] - c[a]);
+    const share = [...o.shuffledBase].sort((a, b) => b - a);
+    const d: Dist = [0, 0, 0];
+    rank.forEach((m, i) => { d[m] = share[i]; });
+    return normalize(d);
+  }
   if (o.bluff) {
     if (!now.said) return null;
     // Expect the bluff; if you answered his last announcement a certain way, expect him to beat that answer again.

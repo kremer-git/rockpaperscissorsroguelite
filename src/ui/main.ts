@@ -1,6 +1,6 @@
 import type { App, Screen } from './app';
 import type { GameState, Move } from '../core/types';
-import { buyLife, buyUpgrade, createRun, leaveStore, playRound, rerollOpponent, rerollStore, validateState, RuleError } from '../core/engine';
+import { buyLife, buyUpgrade, createRun, curveGap, leaveStore, playRound, rerollOpponent, rerollStore, validateState, RuleError } from '../core/engine';
 import { allInAvailable, canThrow } from '../core/rules';
 import { h } from './dom';
 import { installPresentation, flushFx } from './presentation';
@@ -35,6 +35,10 @@ function load(): GameState | null {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw) as GameState;
+    // Retired upgrades in an older save become their replacement (Notes App → Show Your Work).
+    const RETIRED: Record<string, string> = { 'notes-app': 'show-your-work' };
+    for (const u of s.owned ?? []) if (RETIRED[u.id]) { u.id = RETIRED[u.id]; u.data = {}; }
+    for (const o of s.store?.offers ?? []) if (RETIRED[o.upgradeId]) o.upgradeId = RETIRED[o.upgradeId];
     return validateState(s).length ? null : s; // corrupted or outdated saves are ignored
   } catch { return null; }
 }
@@ -89,18 +93,21 @@ const app: App = {
     },
     toggleAllIn() { if (app.busy) return; if (app.state && app.state.status === 'playing' && app.screen === 'run' && allInAvailable(app.state)) { app.allIn = !app.allIn; render(); } },
     buy(slot) {
-      const icon = document.querySelector(`.offers .up-card[data-slot="${slot}"] .card-icon`)?.getBoundingClientRect() ?? null;
       const wasSold = !!app.state?.store?.offers.find((o) => o.slot === slot)?.sold;
       tryStore(() => buyUpgrade(app.state!, slot));
       const nowSold = !!app.state?.store?.offers.find((o) => o.slot === slot)?.sold;
-      if (!wasSold && nowSold) director.bought(slot, icon); // only a real purchase gets the stamp
+      if (!wasSold && nowSold) director.bought(slot); // only a real purchase gets the stamp
     },
     buyLife() { tryStore(() => buyLife(app.state!)); },
     rerollStore() { tryStore(() => rerollStore(app.state!)); },
     rerollOpponent() { tryStore(() => rerollOpponent(app.state!)); },
     leaveStore() {
-      const s = app.state; if (!s || s.status !== 'store') return;
-      leaveStore(s); app.last = null; app.allIn = false; app.screen = 'run'; save(s); render(); focusFirst('#throw-R');
+      const s = app.state; if (!s || s.status !== 'store' || app.busy) return;
+      const go = () => { if (app.state !== s || s.status !== 'store') return; leaveStore(s); app.last = null; app.allIn = false; app.screen = 'run'; save(s); render(); focusFirst('#throw-R'); };
+      if (!motionOK()) { go(); return; }
+      // The next stretch's length is only revealed now, with a short drum-roll, before the rounds start.
+      app.busy = true;
+      void director.gapReveal(curveGap(s, s.stage + 1), getOpponent(s.nextOpponentId).name).then(() => { app.busy = false; go(); });
     },
     goStore() { if (app.state?.status === 'store') { app.screen = 'store'; render(); focusFirst('#leave-store'); } },
     goOver() { if (app.state?.status === 'dead' && app.screen !== 'over') { app.screen = 'over'; save(null); render(); director.overIntro(); focusFirst('#restart'); } },
@@ -153,7 +160,7 @@ function fitToScreen(): void {
 window.addEventListener('resize', fitToScreen);
 fitToScreen();
 
-const MUSIC_FOR: Record<ScreenName, MusicTrack> = { title: 'title', howto: 'title', run: 'rounds', store: 'store', over: 'title' };
+const MUSIC_FOR: Record<ScreenName, MusicTrack> = { title: 'theme', howto: 'theme', run: 'theme', store: 'theme', over: 'theme' };
 
 let lastScreen = '';
 function render(): void {

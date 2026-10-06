@@ -26,7 +26,7 @@ export function debugPanel(app: App): HTMLElement {
   const intel = s.status === 'playing' ? getIntel(s, { light: true }) : null;
   const dist = inspect.committedDist ? inspect.committedDist.map((x) => `${Math.round(x * 100)}%`).join(' / ') : '—';
   return h('aside', { class: 'debug', 'aria-label': 'Debug panel' },
-    h('div', { class: 'debug-head' }, h('h2', null, 'Debug mode'), h('button', { class: 'btn small', onclick: () => app.actions.toggleDebug() }, 'Close ', h('kbd', null, '`'))),
+    h('div', { class: 'debug-head' }, h('h2', null, 'Debug mode'), h('button', { class: 'btn small', onclick: () => app.actions.toggleDebug() }, 'Close ')),
     h('section', null, h('h3', null, 'Resources'),
       h('div', { class: 'row' },
         h('button', { class: 'btn small', onclick: act(() => dbgAddCurrency(s, 100)) }, '+100¢'),

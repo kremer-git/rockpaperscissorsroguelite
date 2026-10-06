@@ -37,6 +37,7 @@ const sfx = (page) => page.evaluate(() => [...window.__fx.sfx]);
 const clearSfx = (page) => page.evaluate(() => { window.__fx.sfx.length = 0; });
 const force = (page, o) => debug(page, () => page.click(`text=${o} if you throw R`));
 const start = async (page) => { await page.click('#start'); await page.waitForSelector('#throw-R'); };
+const leave = async (page) => { await page.click('#leave-store'); await page.waitForSelector('.screen.run', { timeout: 6000 }); await page.waitForSelector('#gap-reveal', { state: 'detached', timeout: 2000 }).catch(() => {}); };
 const stage = (page, n) => debug(page, async () => { await page.fill('#dbg-stage', String(n)); await page.click('#dbg-jump'); });
 const throwR = async (page) => { if (page.kind === 'phone') await page.tap('#throw-R'); else await page.keyboard.press('r'); };
 const hudCoins = (page) => page.$eval('[data-fx="coins"] .hud-num', (e) => Number(e.textContent.replace(/\D/g, '')));
@@ -63,6 +64,10 @@ for (const kind of ['desktop', 'phone']) {
     await page.waitForTimeout(300);
     const round1 = await page.evaluate(() => document.querySelector('.hud-stat .hud-num').textContent);
     check(`${kind}: a second press during the pump is ignored (one round, not two)`, Number(round1) === Number(round0) + 1, `${round0}→${round1}`);
+    if (kind === 'desktop') { await page.mouse.move(2, 2); await page.waitForTimeout(300); }
+    const looks = await page.$$eval('.throw', (bs) => bs.map((b) => { const c = getComputedStyle(b); return [b.className.replace(/tree-\w+/, ''), c.borderTopColor, c.transform, c.boxShadow].join('|'); }));
+    check(`${kind}: after a throw the three choices look equal (no gold ring, nothing raised)`, new Set(looks).size === 1, looks.join(' ; '));
+    await shot(page, '04-throws-equal');
     // a frame mid-pump, for the eye
     await force(page, 'TIE'); await throwR(page); await page.waitForTimeout(70); await shot(page, '03-pump'); await page.waitForTimeout(500);
     // 4 + 7: win impact + coins
@@ -162,7 +167,7 @@ for (const kind of ['desktop', 'phone']) {
     await page.waitForTimeout(500);
     check(`${kind}: store cards are dealt in (4 cards, staggered)`, dealing.length === 4 && dealing.every(Boolean) && (await sfx(page)).filter((x) => x === 'deal').length === 4);
     check(`${kind}: dealt cards end fully visible and in place`, await page.$$eval('.offers .up-card', (cs) => cs.every((c) => getComputedStyle(c).opacity === '1')));
-    // 12: buy → stamp + token flies
+    // 12: buy → stamp (no flying token any more)
     await debug(page, () => page.click('text=+1000¢'));
     const btn = await page.$('.offers .up-card button:not([disabled])');
     await btn.scrollIntoViewIfNeeded();
@@ -170,11 +175,10 @@ for (const kind of ['desktop', 'phone']) {
     await clearSfx(page);
     if (kind === 'phone') await btn.tap(); else await btn.click();
     await page.waitForTimeout(150);
-    const stamp = await page.evaluate((slot) => ({ stamp: !!document.querySelector(`.up-card[data-slot="${slot}"] .sold.stamp-in`), token: !!document.querySelector('#fx-layer .fly.card-token img') }), slot);
+    const stamp = await page.evaluate((slot) => ({ stamp: !!document.querySelector(`.up-card[data-slot="${slot}"] .sold.stamp-in`), token: !!document.querySelector('#fx-layer .fly') }), slot);
     await shot(page, '12-bought-stamp');
-    check(`${kind}: buying stamps the card and a token flies to your build`, stamp.stamp && stamp.token && (await sfx(page)).includes('stamp'), JSON.stringify(stamp));
-    await page.waitForTimeout(800);
-    check(`${kind}: flying token cleans up`, !(await page.$('#fx-layer .fly')));
+    check(`${kind}: buying stamps the card, and nothing flies off to the build`, stamp.stamp && !stamp.token && (await sfx(page)).includes('stamp'), JSON.stringify(stamp));
+    await page.waitForTimeout(300);
     const soldOpacity = async () => page.$eval(`.offers .up-card[data-slot="${slot}"]`, (c) => ({ sold: c.classList.contains('sold-card'), op: Number(getComputedStyle(c).opacity), cls: c.className, anim: getComputedStyle(c).animationName }));
     const before = await soldOpacity();
     await clearSfx(page);
@@ -189,7 +193,7 @@ for (const kind of ['desktop', 'phone']) {
     check(`${kind}: after a reroll the bought card stays greyed out`, before.sold && after.sold && after.op < 0.8 && Math.abs(after.op - before.op) < 0.01, JSON.stringify({ before, after }));
     check(`${kind}: a reroll deals in only the new cards (not the bought one)`, dealtNow.filter((c) => c.sold).every((c) => !c.deal) && dealtNow.filter((c) => !c.sold).every((c) => c.deal) && (await sfx(page)).filter((x) => x === 'deal').length === dealtNow.filter((c) => !c.sold).length, JSON.stringify(dealtNow));
     // 13: find a legendary by rerolling (late stage weights)
-    await page.click('#leave-store'); await page.waitForTimeout(100);
+    await leave(page);
     await stage(page, 12);
     await debug(page, async () => { await page.click('text=+1M¢'); await page.click('text=Skip to store'); });
     let found = false;
@@ -206,33 +210,41 @@ for (const kind of ['desktop', 'phone']) {
     } else check(`${kind}: legendary card has the gold shimmer`, false, 'no legendary after 40 rerolls');
     await page.ctx.close();
   }
-  // ---------------- 10: dreaded gap ----------------
+  // ---------------- 10: dreaded gap: hidden in the store, revealed after Continue ----------------
   {
     const page = await open(kind);
     await start(page);
     await stage(page, 6); // next stretch after this store is 34
     await debug(page, () => page.click('text=Skip to store'));
     await clearSfx(page);
-    const num = await page.$('.stretch-num');
-    if (kind === 'phone') {
-      await page.waitForTimeout(400);
-      check('phone: count-up waits until the card is scrolled into view', (await page.$eval('.stretch-num', (e) => e.classList.contains('dread-hold'))) && !(await sfx(page)).includes('drum'));
-      await num.scrollIntoViewIfNeeded();
-    }
+    await page.waitForTimeout(600);
+    const inStore = await page.innerText('.stretch');
+    check(`${kind}: the store doesn't say how long the next stretch is`, /\?\? rounds/.test(inStore) && !/34/.test(inStore) && !(await sfx(page)).includes('drum'), inStore.replace(/\n/g, ' | '));
+    const cont = page.locator('#leave-store'); await cont.scrollIntoViewIfNeeded();
+    if (kind === 'phone') await cont.tap(); else await cont.click();
     await page.waitForTimeout(450);
-    const mid = await page.$eval('.stretch-num', (e) => ({ text: e.textContent, scale: getComputedStyle(e).getPropertyValue('--dread') }));
-    await shot(page, '10-dread-mid');
-    await page.waitForTimeout(1300);
-    const end = await page.$eval('.stretch-num', (e) => e.textContent);
+    const mid = await page.evaluate(() => { const o = document.getElementById('gap-reveal'); const n = o?.querySelector('.gr-num'); const r = o?.getBoundingClientRect(); return o ? { text: n.textContent, scale: getComputedStyle(n).getPropertyValue('--dread'), full: r.width >= innerWidth - 1 && r.height >= innerHeight - 1, store: !!document.querySelector('.screen.store') } : null; });
+    await shot(page, '10-reveal-mid');
+    check(`${kind}: Continue opens a full-screen reveal that counts up the Fibonacci steps (still on the store underneath)`, !!mid && Number(mid.text) < 34 && Number(mid.scale) > 1 && mid.full && mid.store, JSON.stringify(mid));
+    await page.waitForFunction(() => document.querySelector('#gap-reveal .gr-num')?.textContent === '34', null, { timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(250);
+    await shot(page, '10-reveal-end');
+    const end = await page.evaluate(() => ({ num: document.querySelector('#gap-reveal .gr-num')?.textContent, sub: document.querySelector('#gap-reveal .gr-sub')?.textContent, scary: document.getElementById('gap-reveal')?.classList.contains('scary') }));
     const drums = (await sfx(page)).filter((x) => x === 'drum').length;
-    await shot(page, '10-dread-end');
-    check(`${kind}: dread: counts up the Fibonacci steps with growing scale`, Number(mid.text.replace(/\D/g, '')) < 34 && Number(mid.scale) > 1, JSON.stringify(mid));
-    check(`${kind}: dread: lands on the real gap with drums and a big final drum`, end === '34 rounds' && drums >= 6 && (await sfx(page)).includes('drumBig'), `${end}, ${drums} drums`);
-    // re-render (buy something) must not restart it
-    await clearSfx(page);
-    await page.click('#reroll-store').catch(() => {});
-    await page.waitForTimeout(300);
-    check(`${kind}: dread plays once per store visit (not again after a reroll)`, !(await sfx(page)).includes('drum'));
+    check(`${kind}: reveal lands on the real gap with drums and a big final drum`, end.num === '34' && /rounds vs /.test(end.sub) && end.scary && drums >= 6 && (await sfx(page)).includes('drumBig'), `${JSON.stringify(end)}, ${drums} drums`);
+    await page.waitForSelector('.screen.run', { timeout: 3000 });
+    await page.waitForTimeout(400);
+    check(`${kind}: then the rounds start (the stretch is 34) and the reveal is gone`, /this stretch is 34 rounds/i.test(await page.innerText('.progress')) && !(await page.$('#gap-reveal')));
+    // tap to skip
+    await stage(page, 8);
+    await debug(page, () => page.click('text=Skip to store'));
+    await page.waitForTimeout(500);
+    const t0 = Date.now();
+    await page.locator('#leave-store').click();
+    await page.waitForTimeout(200);
+    await page.mouse.click(30, 300);
+    await page.waitForSelector('.screen.run', { timeout: 3000 });
+    check(`${kind}: a tap skips the reveal`, Date.now() - t0 < 900, `${Date.now() - t0}ms`);
     await page.ctx.close();
   }
   // ---------------- 16: death transition ----------------
@@ -332,7 +344,7 @@ for (const kind of ['desktop', 'phone']) {
   const st = (await sfx(page)).filter((x) => x === 'stamp').length;
   check('QA#1: pressing Buy again on a bought slot does not replay the stamp/fly', st === 1, `stamps=${st}`);
   // QA#3: next run's first store still deals
-  await page.click('#leave-store');
+  await leave(page);
   await debug(page, async () => { for (let i = 0; i < 6; i++) await page.click('text=−1 life'); await page.click('text=LOSS if you throw R'); });
   await page.keyboard.press('r');
   await page.waitForSelector('.screen.over', { timeout: 5000 });

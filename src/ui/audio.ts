@@ -1,5 +1,10 @@
-// Sound for the game: recorded files for throws, purchases, life loss and the
-// three music loops; small synthesized sounds (Web Audio) for UI feedback.
+// Sound for the game: recorded files for throws, purchases and life loss, one
+// optional music loop (off until the player turns it on), and small synthesized
+// sounds (Web Audio) for UI feedback.
+//
+// Music volume goes through a Web Audio gain node where possible: iPhone/iPad
+// browsers ignore an audio element's .volume (only the hardware buttons change it),
+// which is why the music slider used to do nothing on phones.
 //
 // Everything is driven by engine events and screen changes, never the other
 // way round: the engine never waits on audio. Browsers only allow sound after
@@ -7,7 +12,7 @@
 
 import type { EngineEvent, Move } from '../core/types';
 
-export type MusicTrack = 'title' | 'rounds' | 'store';
+export type MusicTrack = 'theme';
 export type FileSfx = 'rock' | 'paper' | 'scissors' | 'purchase' | 'lifeLost';
 export type SynthSfx = 'hover' | 'click' | 'toggle' | 'deny' | 'win' | 'tie' | 'save' | 'phew' | 'death' | 'storeIn' | 'storeOut' | 'award'
   | 'coin' | 'coinSmall' | 'tick' | 'drum' | 'drumBig' | 'stamp' | 'deal' | 'impact' | 'scratch' | 'sparkle' | 'shimmer' | 'whoosh' | 'bonk' | 'hit';
@@ -16,9 +21,11 @@ export interface AudioSettings {
   music: number; // 0..1, applied on top of MUSIC_CEILING
   sfx: number; // 0..1
   muted: boolean;
+  /** Music is opt-in ("Turn on epic music?"); nothing is downloaded until it is on. */
+  musicOn: boolean;
 }
 
-export const DEFAULT_AUDIO: AudioSettings = { music: 0.5, sfx: 0.8, muted: false };
+export const DEFAULT_AUDIO: AudioSettings = { music: 0.5, sfx: 0.8, muted: false, musicOn: false };
 
 /** Music never plays louder than this, even at 100%: it sits under the effects. */
 const MUSIC_CEILING = 0.55;
@@ -29,9 +36,7 @@ const FILES: Record<FileSfx | `music-${MusicTrack}`, string> = {
   scissors: 'audio/scissors-select.mp3',
   purchase: 'audio/purchase.mp3',
   lifeLost: 'audio/life-lost.mp3',
-  'music-title': 'audio/music-title.mp3',
-  'music-rounds': 'audio/music-rounds.mp3',
-  'music-store': 'audio/music-store.mp3',
+  'music-theme': 'audio/music-title.mp3',
 };
 
 let settings: AudioSettings = { ...DEFAULT_AUDIO };
@@ -40,24 +45,42 @@ let wanted: MusicTrack | null = null;
 let current: MusicTrack | null = null;
 let duck = 1; // temporary music dip (life lost)
 const music: Partial<Record<MusicTrack, HTMLAudioElement>> = {};
+const gains = new WeakMap<HTMLAudioElement, GainNode>();
 const pools: Partial<Record<FileSfx, HTMLAudioElement[]>> = {};
 let ctx: AudioContext | null = null;
 let lastHover = 0;
 
 const canAudio = () => typeof window !== 'undefined' && typeof Audio !== 'undefined';
-const musicLevel = () => (settings.muted ? 0 : settings.music * MUSIC_CEILING * duck);
+const musicLevel = () => (settings.muted || !settings.musicOn ? 0 : settings.music * MUSIC_CEILING * duck);
 const sfxLevel = () => (settings.muted ? 0 : settings.sfx);
 
 // ---------------- settings ----------------
 
 export function applyAudioSettings(next: AudioSettings): void {
-  settings = { music: clamp01(next.music), sfx: clamp01(next.sfx), muted: !!next.muted };
-  if (current && music[current]) music[current]!.volume = musicLevel();
+  const wasOn = settings.musicOn;
+  settings = { music: clamp01(next.music), sfx: clamp01(next.sfx), muted: !!next.muted, musicOn: !!next.musicOn };
+  if (settings.musicOn !== wasOn) { const w = wanted; wanted = null; if (current) stopCurrent(); setMusic(w); return; }
+  if (current && music[current]) setVol(music[current]!, musicLevel());
 }
 export const getAudioSettings = (): AudioSettings => ({ ...settings });
 const clamp01 = (x: number) => (Number.isFinite(x) ? Math.max(0, Math.min(1, x)) : 0);
 
 // ---------------- music ----------------
+
+function audioCtx(): AudioContext | null {
+  if (ctx) return ctx;
+  try {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    ctx = AC ? new AC() : null;
+  } catch { ctx = null; }
+  return ctx;
+}
+
+/**
+ * Pages opened straight from disk (file://) can't route an audio file through Web Audio
+ * (the browser treats it as another site and plays silence), so those keep using .volume.
+ */
+const canRoute = () => typeof location !== 'undefined' && /^https?:$/.test(location.protocol);
 
 function track(t: MusicTrack): HTMLAudioElement {
   let el = music[t];
@@ -66,42 +89,67 @@ function track(t: MusicTrack): HTMLAudioElement {
     el.src = FILES[`music-${t}`];
     el.loop = true;
     el.preload = 'auto';
-    el.volume = 0;
     el.dataset.track = t;
     music[t] = el;
+    const ac = canRoute() ? audioCtx() : null;
+    if (ac) {
+      try {
+        const g = ac.createGain();
+        g.gain.value = 0;
+        ac.createMediaElementSource(el).connect(g).connect(ac.destination);
+        gains.set(el, g);
+      } catch { /* fall back to .volume */ }
+    }
+    if (!gains.has(el)) el.volume = 0;
   }
   return el;
 }
 
-/** Fade an element's volume to `to` over `ms`, then optionally pause it. */
+function getVol(el: HTMLAudioElement): number {
+  const g = gains.get(el);
+  return g ? g.gain.value : el.volume;
+}
+function setVol(el: HTMLAudioElement, v: number): void {
+  const g = gains.get(el);
+  if (g) g.gain.value = v; else el.volume = Math.max(0, Math.min(1, v));
+}
+
+/** Fade the music's volume to `to` over `ms`, then optionally pause it. */
 const fades = new WeakMap<HTMLAudioElement, number>();
 function fade(el: HTMLAudioElement, to: number, ms: number, pauseAfter = false): void {
   const prev = fades.get(el);
   if (prev) cancelAnimationFrame(prev);
-  const from = el.volume;
+  const from = getVol(el);
   const t0 = performance.now();
   const step = (now: number) => {
     const k = Math.min(1, (now - t0) / ms);
-    el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    setVol(el, Math.max(0, Math.min(1, from + (to - from) * k)));
     if (k < 1) fades.set(el, requestAnimationFrame(step));
     else { fades.delete(el); if (pauseAfter) el.pause(); }
   };
   fades.set(el, requestAnimationFrame(step));
 }
 
+function stopCurrent(): void {
+  if (current && music[current]) fade(music[current]!, 0, 500, true);
+  current = null;
+}
+
 /**
- * Which loop should be playing. Tracks keep their position, so going
- * Store → Rounds resumes the rounds music where it left off.
+ * Which loop should be playing (null = silence, e.g. while the run-over sequence plays).
+ * There is one theme that loops across every screen and keeps its place.
  */
 export function setMusic(t: MusicTrack | null): void {
   wanted = t;
   if (!unlocked || !canAudio()) return;
+  if (!settings.musicOn) { if (current) stopCurrent(); return; }
   if (t === current) { if (t && music[t]?.paused) void music[t]!.play().catch(() => undefined); return; }
-  if (current && music[current]) fade(music[current]!, 0, 700, true);
+  if (current) stopCurrent();
   current = t;
   if (!t) return;
   const el = track(t);
-  el.volume = 0;
+  if (ctx?.state === 'suspended') void ctx.resume();
+  setVol(el, 0);
   void el.play().then(() => fade(el, musicLevel(), 900)).catch(() => undefined);
 }
 
@@ -173,9 +221,8 @@ export function playSynth(k: SynthSfx, pitch = 1): void {
   sfxLog.push(k); if (sfxLog.length > 200) sfxLog.shift();
   if (!unlocked || sfxLevel() <= 0) return;
   try {
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AC) return;
-    ctx ??= new AC();
+    const ctx = audioCtx();
+    if (!ctx) return;
     if (ctx.state === 'suspended') void ctx.resume();
     const now = ctx.currentTime + 0.005;
     for (const n of SYNTH[k]) {
@@ -265,6 +312,8 @@ export const audioDebug = {
   get unlocked() { return unlocked; },
   get current() { return current; },
   get wanted() { return wanted; },
-  musicVolume: () => (current && music[current] ? music[current]!.volume : 0),
+  musicVolume: () => (current && music[current] ? getVol(music[current]!) : 0),
+  /** True when the music runs through a Web Audio gain node (what makes the slider work on iPhone). */
+  musicRouted: () => !!(current && music[current] && gains.has(music[current]!)),
   forceUnlock() { if (!unlocked) { unlocked = true; setMusic(wanted); } },
 };

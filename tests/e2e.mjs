@@ -154,26 +154,29 @@ for (const [w, h] of [[1366, 768], [1920, 1080], [2560, 1440]]) {
   check('silent until the player interacts', (await plays()).length === 0);
   await page.mouse.click(5, 5);
   await page.waitForTimeout(200);
-  check('title music starts after the first interaction, looping', (await page.evaluate(() => window.__plays.some((p) => p.src === 'music-title.mp3' && p.loop))));
-  await page.keyboard.press('h');
+  check('music is off by default: nothing plays after the first interaction', !(await plays()).some((x) => x.startsWith('music')));
+  check('title offers “Turn on epic music?”', (await page.textContent('#title-music-on'))?.includes('Turn on epic music?'));
+  await page.click('#title-music-on');
+  await page.waitForTimeout(200);
+  check('turning it on starts the one looping track', (await page.evaluate(() => window.__plays.some((p) => p.src === 'music-title.mp3' && p.loop))));
+  check('the title prompt goes away once music is on', !(await page.$('#title-music-on')));
+  await page.click('#howto');
   await page.waitForTimeout(100);
-  check('How to Play keeps the title music (no restart)', (await plays()).filter((x) => x === 'music-title.mp3').length === 1);
+  check('How to Play keeps the same music (no restart)', (await plays()).filter((x) => x === 'music-title.mp3').length === 1);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Enter');
   await page.waitForTimeout(200);
-  check('rounds music on the run screen', (await plays()).includes('music-rounds.mp3'));
   await page.keyboard.press('r');
   await page.waitForTimeout(100);
   check('Rock plays RockSelect', (await plays()).includes('rock-select.mp3'));
   await page.keyboard.press('Enter'); // round 1 → store
   await page.waitForTimeout(200);
-  check('store music in the store', (await plays()).includes('music-store.mp3'));
   await page.keyboard.press('1');
   await page.waitForTimeout(100);
   check('buying plays PurchaseSuccess', (await plays()).includes('purchase.mp3'));
   await page.keyboard.press('Enter');
   await page.waitForTimeout(200);
-  check('back to rounds music after the store', (await plays()).filter((x) => x === 'music-rounds.mp3').length >= 2);
+  check('one track across title, rounds and store (no other music files)', !(await plays()).some((x) => x.startsWith('music') && x !== 'music-title.mp3'));
   await page.keyboard.press('p'); await page.waitForTimeout(80);
   await page.keyboard.press('s'); await page.waitForTimeout(80);
   const p = await plays();
@@ -190,7 +193,10 @@ for (const [w, h] of [[1366, 768], [1920, 1080], [2560, 1440]]) {
   const musicVol = await page.evaluate(() => Math.max(...[...document.querySelectorAll('audio')].map((a) => a.volume), ...Array.from({ length: 0 })));
   void musicVol;
   await page.click('#sound-toggle');
-  check('sound dock opens with music/effects sliders', !!(await page.$('#vol-music')) && !!(await page.$('#vol-sfx')));
+  check('sound dock opens with music/effects sliders (music is on)', !!(await page.$('#vol-music')) && !!(await page.$('#vol-sfx')));
+  await page.click('#music-on');
+  await page.waitForTimeout(100);
+  check('music can be switched off again (the opt-in button returns)', !(await page.$('#vol-music')) && !!(await page.$('#sd-music-on')) && (await page.evaluate(() => window.__fx.audio.current)) === null);
   await page.keyboard.press('Escape');
   await page.keyboard.press('v');
   check('V mutes (button says Muted)', (await page.textContent('#sound-toggle')).includes('Muted'));
@@ -246,6 +252,10 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
 // ---------- portraits: every opponent shows its picture, everywhere; missing files fall back to initials ----------
 for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   const page = await open(w, hgt);
+  // a veteran: every opponent met once (the store only shows portraits of opponents you've faced)
+  await page.addInitScript(() => { if (sessionStorage.getItem('vet')) return; sessionStorage.setItem('vet', '1'); const foes = {}; for (const id of 'repeater,rock-enjoyer,paper-pusher,scissor-sister,cycler,mimic,loop,superstitious,contrarian,hot-hand,cold-hand,collector,gambler,psychologist,mirror,chaos-engine,mood-swings,oracle,bluffer,nash'.split(',')) foes[id] = { met: 1, beaten: 0 }; localStorage.setItem('rps-roguelite.awards.v1', JSON.stringify({ best: 0, bestHard: 0, runs: 0, unlocked: {}, foes })); });
+  await page.reload();
+  check(`${w}px: (setup) veteran progress loaded`, (await page.innerText('#foes-count')).includes('20 met'));
   await page.keyboard.press('Enter');
   await debug(page, async () => { await page.click('text=+1 life'); await page.fill('#dbg-stage', '9'); await page.click('#dbg-jump'); });
   let ids = [];
@@ -264,7 +274,7 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   // store: next-opponent portrait
   await debug(page, async () => { await page.click('text=Skip to store'); });
   const storeImg = await page.waitForFunction(() => { const i = document.querySelector('.service .portrait img.asset-img'); return !!(i && i.complete && i.naturalWidth === 256); }, null, { timeout: 3000 }).then(() => true).catch(() => false);
-  check(`${w}px: store shows the next opponent's portrait`, storeImg);
+  check(`${w}px: store shows the next opponent's portrait (once met)`, storeImg, storeImg ? '' : (await page.$eval('.next-opp', (e) => e.innerHTML.slice(0, 200)).catch((e) => String(e))));
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/portrait-store-${w}.png` });
   await page.close();
 }
@@ -344,8 +354,8 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
     check('phone store: pinned wallet updates after a purchase while scrolled', Number(after) < Number(coins) && barTop >= -1 && barTop < 40, `${coins}→${after}`);
   }
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/r6-store-pinned-390.png` });
-  await (await page.$('text=Continue')).scrollIntoViewIfNeeded();
-  await page.tap('text=Continue'); await page.waitForTimeout(250);
+  await (await page.$('#leave-store')).scrollIntoViewIfNeeded();
+  await page.tap('#leave-store'); await page.waitForTimeout(250);
   check('phone: next round starts scrolled to the top (was: stuck at the build panel)', (await page.evaluate(() => scrollY)) === 0 && !!(await page.$('#throw-R')));
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/r6-after-store-390.png` });
   await ctx.close();
@@ -435,7 +445,7 @@ const imgsLoaded = (page, sel) => page.waitForFunction((sel) => { const im = [..
   await dp.keyboard.press('Enter');
   check('desktop: HUD not sticky, seed visible', await dp.$eval('.hud', (el) => getComputedStyle(el).position !== 'sticky') && await dp.$eval('.hud-seed', (el) => getComputedStyle(el).display !== 'none'));
   await debug(dp, async () => { await dp.click('text=+1000¢'); await dp.click('text=Skip to store'); });
-  await (await dp.$('.offers .up-card button:not([disabled])')).click(); await dp.waitForTimeout(120);
+  await dp.locator('.offers .up-card button:not([disabled])').first().click(); await dp.waitForTimeout(120);
   check('desktop store: bought card keeps its full size (grid stays aligned)', await dp.$eval('.offers .sold-card', (el) => el.getBoundingClientRect().height > 150));
   await dp.close();
 }
@@ -452,6 +462,70 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   const last = await page.innerText('.howto-card');
   check(`${w}px How to Play ends with the summary page`, /What you’re in for/i.test(last) && /51 upgrades across three skill trees/.test(last) && /20 opponents/.test(last) && /meta-progression/.test(last) && /One more run\?/.test(last), last.slice(0, 120).replace(/\n/g, ' | '));
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/howto-last-${w}.png` });
+  await page.close();
+}
+
+// ---------- round 9: music volume on phones, no shortcut chips, equal throws, mystery opponent ----------
+{
+  // Served over http (like GitHub Pages / claude.ai): music runs through a Web Audio gain node, which is what
+  // iPhones respect (they ignore an <audio> element's .volume).
+  const http = await import('node:http');
+  const fs = await import('node:fs');
+  const root = path.resolve('.e2e');
+  const types = { '.html': 'text/html', '.mp3': 'audio/mpeg', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
+  const server = http.createServer((req, res) => {
+    const f = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\/$/, '/index.html'));
+    if (!f.startsWith(root) || !fs.existsSync(f)) { res.writeHead(404); res.end(); return; }
+    res.writeHead(200, { 'content-type': types[path.extname(f)] ?? 'application/octet-stream' });
+    fs.createReadStream(f).pipe(res);
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const url = `http://127.0.0.1:${server.address().port}/index.html`;
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  await page.goto(url); await page.evaluate(() => localStorage.clear()); await page.reload();
+  await page.tap('#title-music-on');
+  await page.waitForTimeout(1500);
+  const a = await page.evaluate(() => ({ routed: window.__fx.audio.musicRouted(), vol: window.__fx.audio.musicVolume(), el: [...document.querySelectorAll('audio')].length }));
+  check('http: music is routed through a gain node', a.routed, JSON.stringify(a));
+  check('http: music fades in to the default level (50% of the ceiling)', Math.abs(a.vol - 0.275) < 0.02, String(a.vol));
+  await page.tap('#sound-toggle');
+  await page.$eval('#vol-music', (el) => { el.value = '10'; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); });
+  const v = await page.evaluate(() => window.__fx.audio.musicVolume());
+  check('http: the music slider changes the gain (works on iPhone)', Math.abs(v - 0.055) < 0.005, String(v));
+  await page.close();
+  server.close();
+}
+for (const [w, hgt, mobile] of [[1366, 768, false], [390, 844, true]]) {
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: w, height: hgt }, hasTouch: mobile, isMobile: mobile });
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  await page.goto(PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
+  const press = (sel) => (mobile ? page.tap(sel) : page.click(sel));
+  const kbds = [];
+  kbds.push(await page.$$eval('kbd', (k) => k.length));
+  await press('#start');
+  kbds.push(await page.$$eval('kbd', (k) => k.length));
+  await page.keyboard.press('`'); await page.fill('#dbg-stage', '6'); await page.click('#dbg-jump'); await page.keyboard.press('`');
+  await press('#throw-P');
+  await page.waitForTimeout(150);
+  await page.mouse.move(2, 2); // desktop: the hover lift belongs to the pointer, not to the last throw
+  const looks = await page.$$eval('.throw', (bs) => bs.map((b) => { const c = getComputedStyle(b); return [b.className.replace(/tree-\w+/, ''), c.borderTopColor, c.transform, c.boxShadow, c.outlineStyle].join('|'); }));
+  check(`${w}px: after a throw all three choices look the same (no highlight, not raised)`, new Set(looks).size === 1 && !looks[0].includes('selected'), looks.join(' ; '));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r9-throws-${w}.png` });
+  await page.keyboard.press('`'); await page.click('text=Skip to store'); await page.keyboard.press('`');
+  await page.waitForSelector('.screen.store');
+  kbds.push(await page.$$eval('kbd', (k) => k.length));
+  check(`${w}px: no keyboard-shortcut chips (title, rounds, store)`, kbds.every((n) => n === 0), kbds.join(','));
+  const next = await page.evaluate(() => ({ mystery: !!document.querySelector('.next-opp .portrait.foe-mystery'), img: !!document.querySelector('.next-opp .portrait img'), sub: document.querySelector('.next-opp .opp-title')?.textContent }));
+  check(`${w}px store: an opponent you’ve never faced shows the “?” tile, not their portrait`, next.mystery && !next.img && next.sub === 'Not met yet', JSON.stringify(next));
+  const stretch = await page.innerText('.stretch');
+  check(`${w}px store: the next stretch length is not shown before Continue`, /\?\? rounds/.test(stretch) && !/Then \d/.test(stretch), stretch.replace(/\n/g, ' | '));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r9-store-${w}.png`, fullPage: true });
+  await press('#leave-store');
+  await page.waitForSelector('.screen.run');
+  check(`${w}px: reduced motion: Continue goes straight to the rounds, which show the stretch length`, /this stretch is \d+ rounds/i.test(await page.innerText('.progress')));
   await page.close();
 }
 

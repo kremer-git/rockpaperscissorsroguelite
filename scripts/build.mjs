@@ -7,7 +7,7 @@
 //   node scripts/build.mjs          public build + test build
 //   node scripts/build.mjs --dev    same, but dist/ also gets the debug panel (local tinkering only)
 import { build } from 'esbuild';
-import { readFileSync, writeFileSync, mkdirSync, cpSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, cpSync, rmSync } from 'node:fs';
 
 const dev = process.argv.includes('--dev');
 const MEDIA = ['audio', 'portraits', 'art'];
@@ -36,7 +36,8 @@ function wrap(fragment) {
 
 function write(dir, fragment, withArtifact) {
   mkdirSync(dir, { recursive: true });
-  for (const m of MEDIA) cpSync(`assets/${m}`, `${dir}/${m}`, { recursive: true });
+  // replace (not merge) so files removed from assets/ disappear from the build too
+  for (const m of MEDIA) { rmSync(`${dir}/${m}`, { recursive: true, force: true }); cpSync(`assets/${m}`, `${dir}/${m}`, { recursive: true }); }
   if (withArtifact) writeFileSync(`${dir}/artifact.html`, fragment);
   writeFileSync(`${dir}/index.html`, wrap(fragment));
 }

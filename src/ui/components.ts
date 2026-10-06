@@ -166,7 +166,7 @@ export function readStrip(v: IntelView, o: ReadOpts): HTMLElement | null {
     const top = (['R', 'P', 'S'] as Move[]).reduce((a, b) => (d[['R', 'P', 'S'].indexOf(b)] > d[['R', 'P', 'S'].indexOf(a)] ? b : a));
     const conf = Math.round(Math.max(...d) * 100);
     parts.push(h('span', { class: 'read-item hunch' }, h('span', { class: 'eyebrow' }, 'Hunch'),
-      ' Probably ', h('b', null, MOVE_NAME[top]), ` · ${conf}% sure`, p.confidence === 'Low' ? ' (not much data yet)' : '',
+      ' Probably ', h('b', null, MOVE_NAME[top]), ` · ${conf}% sure`, p.confidence === 'Low' ? (p.thin ? ' (not much data yet)' : ' (hard to read)') : '',
       ' · suggested: ', h('b', null, MOVE_NAME[p.recommended]), hideBtn('hunch', 'the Hunch')));
   }
   if (v.oddsUnreadable) parts.push(h('span', { class: 'read-item smudge' }, h('span', { class: 'eyebrow' }, 'Instructions'), ' Smudged this round: no true odds.'));

@@ -1,6 +1,6 @@
 # Rock Paper Scissors — The Roguelite
 
-**Play online:** https://kremer-git.github.io/rockpaperscissorsroguelite/ (GitHub Pages; the root page forwards to `dist/`). Offline: open `dist/index.html` with the `dist/audio` folder beside it.
+**Play online:** https://kremer-git.github.io/rockpaperscissorsroguelite/ (GitHub Pages; the root page forwards to `dist/`). Offline: open `dist/index.html` with the `dist/audio`, `dist/portraits` and `dist/art` folders beside it.
 
 It's just Rock, Paper, Scissors. With a build. And an economy. And store gaps that grow like Fibonacci.
 
@@ -98,6 +98,8 @@ Playstyles added in round 5:
 | Moira, Mood Swings | hard | `moods`: Stubborn (repeats herself) and Spiteful (beats your last throw), swapping every 5 rounds | Mood and rounds until it swings, next to the throw buttons |
 | Felix, The Bluffer | elite | `bluff`: announces a random throw; leans to what beats the counter to it (`bluff`), sometimes tells the truth (`honest`), and expects you to answer his announcement the way you answered the last one (`read`, an adaptive weight, so Rocks Are Heavy dampens it) | His announcement, every round, plus a "Said" row in the history |
 
+Round 9 changed John, The Nash Equilibrium (elite): `shuffledBase: [6, 3, 1]` and `reshuffleAfterWins: 2`. He throws one move about 55%, one 30% and one 14% (after a 4% randomness floor). Which move gets which share is dealt fresh every time you meet him, and he re-deals (always to a different order) whenever you beat him twice in a row, so exploiting him works in short bursts. The tendency text says so; the Hunch ranks only what he has thrown since his last re-deal.
+
 Announcements and moods are hidden by No Thoughts Just Rock. The estimator (Spreadsheet / Predictive Analytics) has matching context models: the last two and three throws (loops), mood + last throw, and the announcement on its own and with how you answered the last one.
 
 Opponent memory ("your previous throw", "two rounds ago") only covers rounds against the current opponent and starts fresh after every store. The player's own streak upgrades count across stores.
@@ -152,12 +154,14 @@ Cosmetic animations and synthesized sounds layered on top of the game (`src/ui/j
 | Each round | Progress bar slides forward with a tick; the pitch rises over the last 3 rounds |
 | Reaching a store | Bar fills, gold sweep, bell |
 | Store opens | Cards are dealt in one by one (not clickable mid-deal); a legendary card gets a gold shimmer |
-| Next stretch ≥ 34 | The number counts up the Fibonacci steps, growing and shaking, drum per step and a big drum on the real number (once per visit; on phones it waits until scrolled into view) |
-| Buying | Red BOUGHT stamp and a token flies to your build list (on phones it flies down toward it) |
+| Leaving a store | The store doesn't say how long the next stretch is (*?? rounds*). Pressing Continue opens a full-screen reveal: the number counts up the Fibonacci steps, growing, with a drum per step and a big drum on the real number (red and a shake from 34 up), then the rounds start. A tap skips it. With reduced animations it goes straight to the rounds, where the bar shows the length |
+| Buying | Red BOUGHT stamp on the card (the token that flew to the build list was removed: too distracting) |
 | 0 Extra Lives | Subtle, slowly pulsing red edges (not at the start of a Hard Mode run; only once a bought life is gone) |
 | Always | Opponent portraits breathe very gently |
 | Death | Impact, music cut, record scratch; colour drains while the view pushes in on the clash; RUN OVER slams down with a quip and a drum; fade to the game-over screen, whose stats count up. About 2.5 s; any tap or key skips it |
 | Title | A newly earned trophy spins in with sparkles; a newly defeated opponent gets the DEFEATED stamp slammed on (each plays once, when on screen) |
+
+Throw buttons never mark the last throw: no gold ring, and no lift (on touch screens a hover lift used to stick to the last tapped button). With a mouse, hover only brightens a button.
 
 **Reduce animations** (sound menu) or the device's reduced-motion setting turns all of this off. Throws resolve instantly and death goes to the game-over screen after a short pause.
 
@@ -165,10 +169,13 @@ Power-up cards show their tree's Rock/Paper/Scissors drawing plus one small symb
 
 ## Hard Mode, awards and layout
 
-- **Hard Mode** (title screen toggle, key `M`) starts with 0 Extra Lives. Stored in `GameState.mode`; seeds replay in the same mode.
+- **Music** is off until you press *Turn on epic music?* (title screen or the speaker menu); then the slider controls it and *Epic music* turns it off again. One 2:24 loop (`audio/music-title.mp3`, 1.7 MB, downloaded only once music is on) plays on every screen. Served over http(s) its volume goes through a Web Audio gain node, because iPhones and iPads ignore an `<audio>` element's volume (that's why the slider used to do nothing on phones). Opened from disk (`file://`) it falls back to the element volume.
+- **Input** is mouse or touch. The old keyboard shortcuts still work but are no longer labelled anywhere.
+- **Hard Mode** (title screen toggle) starts with 0 Extra Lives. Stored in `GameState.mode`; seeds replay in the same mode.
 - **Awards** at 100/200/300/400/500 rounds live on the title-screen trophy shelf (`src/ui/awards.ts`), each with its own trophy picture. Locked trophies show as dark silhouettes. They're saved in browser storage and, on claude.ai for a signed-in viewer, in their private `db` record (`data/users/<id>/awards`), merged as a union so nothing is lost. They grant no power.
+- **Next opponent in the store:** someone you've never faced shows the same `?` tile as the collection (*Not met yet*); their tendency still shows if you've done your research.
 - **Opponents Defeated** is a collection under the trophy shelf, open by default (closing it is remembered). An opponent you've never played is a `?` tile. One you've played but not beaten shows their portrait as *Not yet defeated*. Survive a whole stretch against them and reach the store, and they're crossed off as *Defeated* (with a toast the first time). It's stored with the awards (`foes` in the same record) and merged the same way, keeping the higher counts.
-- **Build panel**: collapse it (`B` or the Hide button) or collapse each tree; upgrades are listed in purchase order. Intel read-outs (Hunch, Cold Read) have on/off switches. All remembered per browser (`src/ui/prefs.ts`).
+- **Build panel**: collapse it (the Hide button) or collapse each tree; upgrades are listed in purchase order. Intel read-outs (Hunch, Cold Read) have on/off switches. All remembered per browser (`src/ui/prefs.ts`).
 - **Phones and narrow windows:**
   - During play, a compact HUD (round, coins, lives, progress to the next store) stays pinned at the top while you scroll down to the history or your build. The seed shows on the game-over screen.
   - In the store, a slim *You have ¢ · ♥* bar stays pinned, and bought offers shrink to a one-line *✓ Bought* row.
@@ -183,11 +190,13 @@ The title screen can start a run from a seed (a number, or any word, which is ha
 | Upgrade | What you see |
 |---|---|
 | Do Your Research (5¢) | Opponent archetype + tendency text |
-| Notes App | History of 10 rounds instead of 5, plus their throw counts |
+| Show Your Work | A 4-throw routine shown in your build and as a chip on the next throw's button. Each time you finish one, +2% chance per round that their throw leaks (max +10%, adds to Mastermind); then a new routine starts. Replaced Notes App (old saves convert it) |
 | Cold Read (stacks ×2) | 12% of rounds per copy: one throw they did **not** pick, so it’s one of the other two. The Hunch and button odds use it too. |
 | Spreadsheet / Predictive Analytics | A one-line Hunch (most likely throw, % confidence, suggested throw) and win/lose odds on each button |
 | Actually I Read the Instructions | True win/lose odds on each button on 85% of rounds (the Hunch steps aside when they show) |
 | Mastermind | 20% of rounds: a banner with their locked-in throw |
+
+The Hunch says *not much data yet* during the first few rounds against someone, and *hard to read* when it has plenty of history but the opponent is noisy (Kai, for instance).
 
 No Thoughts Just Rock hides all of it, so the store never offers it together with intel upgrades.
 

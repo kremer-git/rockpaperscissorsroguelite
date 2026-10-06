@@ -62,7 +62,7 @@ test('audio settings default to sensible levels and survive missing/old prefs', 
 });
 
 test('every audio file the game references exists and is compressed', () => {
-  const files = ['rock-select', 'paper-select', 'scissors-select', 'purchase', 'life-lost', 'music-title', 'music-rounds', 'music-store'];
+  const files = ['rock-select', 'paper-select', 'scissors-select', 'purchase', 'life-lost', 'music-title'];
   let total = 0;
   for (const f of files) {
     const p = `assets/audio/${f}.mp3`;
@@ -71,5 +71,5 @@ test('every audio file the game references exists and is compressed', () => {
     total += size;
     if (!f.startsWith('music')) assert.ok(size < 40_000, `${p} is ${size} bytes`);
   }
-  assert.ok(total < 9_000_000, `audio total ${total} bytes`);
+  assert.ok(total < 2_000_000, `audio total ${total} bytes`);
 });

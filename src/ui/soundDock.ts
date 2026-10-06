@@ -4,6 +4,16 @@ import { h } from './dom';
 import { applyAudioSettings, playSynth } from './audio';
 import { savePrefs } from './prefs';
 
+export function setMusicOn(app: App, on: boolean): void {
+  app.actions.setPrefs((p) => { p.audio.musicOn = on; if (on) p.audio.muted = false; applyAudioSettings(p.audio); });
+}
+
+/** Music starts off; this is the opt-in. */
+export function musicButton(app: App, id: string): HTMLElement {
+  return h('button', { class: 'btn small music-on', id, type: 'button', onclick: () => setMusicOn(app, true) },
+    h('span', { 'aria-hidden': 'true' }, '♪ '), 'Turn on epic music?');
+}
+
 export function soundDock(app: App): HTMLElement {
   const a = app.prefs.audio;
   const icon = a.muted ? '🔇' : a.music + a.sfx === 0 ? '🔈' : '🔊';
@@ -25,11 +35,14 @@ export function soundDock(app: App): HTMLElement {
       h('span', { class: 'sd-val num', id: `${id}-val` }, `${Math.round(a[key] * 100)}%`));
   return h('div', { class: `sound-dock ${app.soundOpen ? 'open' : ''}` },
     app.soundOpen ? h('div', { class: 'sd-panel', role: 'group', 'aria-label': 'Sound settings' },
-      slider('vol-music', 'Music', 'music'),
+      a.musicOn ? slider('vol-music', 'Music', 'music') : musicButton(app, 'sd-music-on'),
+      a.musicOn ? h('label', { class: 'sd-row sd-mute', for: 'music-on' },
+        h('input', { type: 'checkbox', id: 'music-on', checked: true, onchange: () => setMusicOn(app, false) }),
+        h('span', null, 'Epic music')) : null,
       slider('vol-sfx', 'Effects', 'sfx'),
       h('label', { class: 'sd-row sd-mute', for: 'sound-mute' },
         h('input', { type: 'checkbox', id: 'sound-mute', checked: a.muted, onchange: () => app.actions.setPrefs((p) => { p.audio.muted = !p.audio.muted; applyAudioSettings(p.audio); }) }),
-        h('span', null, 'Mute everything'), h('kbd', null, 'V')),
+        h('span', null, 'Mute everything')),
       h('label', { class: 'sd-row sd-mute', for: 'reduce-anim' },
         h('input', { type: 'checkbox', id: 'reduce-anim', checked: app.prefs.effects === 'reduced', onchange: () => app.actions.setPrefs((p) => { p.effects = p.effects === 'reduced' ? 'full' : 'reduced'; }) }),
         h('span', null, 'Reduce animations'))) : null,

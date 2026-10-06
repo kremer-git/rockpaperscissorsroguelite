@@ -1,3 +1,6 @@
+import { ROUTINE_LEN, ROUTINE_MAX, routineBonus, routineOf } from '../content/upgrades';
+import { num } from '../core/helpers';
+import { owned } from '../core/registry';
 import type { App } from './app';
 import type { Move } from '../core/types';
 import { h, fmt, pct } from './dom';
@@ -55,12 +58,12 @@ export function runScreen(app: App): HTMLElement {
           r.rawOutcome === 'LOSS' ? h('span', { class: 'small muted' }, `Hindsight: ${MOVE_NAME[beats(r.opponent)]} would have beaten it.`) : null)),
       chips.length ? h('ul', { class: 'triggers' }, shown.map((c) => h('li', { class: `trig ${c.cls}` }, c.text)),
         hidden.length ? h('li', { class: 'trig more', title: hidden.map((c) => c.text).join('\n') }, `+${hidden.length} more`) : null) : null,
-      s.status === 'store' ? h('button', { class: 'btn primary big', id: 'go-store', onclick: () => app.actions.goStore() }, `Enter store #${s.storesVisited}`, h('kbd', null, 'Enter')) : null,
-      s.status === 'dead' ? h('button', { class: 'btn danger big', id: 'go-over', onclick: () => app.actions.goOver() }, 'See the damage', h('kbd', null, 'Enter')) : null);
+      s.status === 'store' ? h('button', { class: 'btn primary big', id: 'go-store', onclick: () => app.actions.goStore() }, `Enter store #${s.storesVisited}`) : null,
+      s.status === 'dead' ? h('button', { class: 'btn danger big', id: 'go-over', onclick: () => app.actions.goOver() }, 'See the damage') : null);
   } else {
     result = h('section', { class: 'result idle' },
       h('p', { class: 'idle-line' }, s.round === 0 ? 'They’ve locked in a throw. Your move.' : `New opponent: ${getOpponent(s.opponentId).name}. ${s.currentGap} rounds to the next store.`),
-      h('p', { class: 'small muted' }, s.round === 0 ? 'Keys R, P, S. The opponent always commits before you choose.' : 'Fresh start: they have no history with you yet, so this first throw can’t react to anything you did. Your own streaks carry over.'));
+      h('p', { class: 'small muted' }, s.round === 0 ? 'Tap a throw. The opponent always commits before you choose.' : 'Fresh start: they have no history with you yet, so this first throw can’t react to anything you did. Your own streaks carry over.'));
   }
 
   // ---------- throws ----------
@@ -70,11 +73,13 @@ export function runScreen(app: App): HTMLElement {
     onHide: (kind) => app.actions.setPrefs((p) => { p.hidden[kind] = true; }),
   };
   const known = buttonOdds(v, readOpts);
+  // Show Your Work: a small chip on the throw that continues the routine (until its bonus is maxed).
+  const sw = owned(s, 'show-your-work');
+  const routineNext = sw && routineBonus(sw) < ROUTINE_MAX ? { m: routineOf(sw)[num(sw, 'step')], step: num(sw, 'step') + 1 } : null;
   const moves = (['R', 'P', 'S'] as Move[]).map((m) => {
     const save = effectiveSaveChance(s, m, app.allIn);
     const cost = throwCost(s, m);
     const ok = playing && canThrow(s, m);
-    const selected = last && last.record.player === m;
     let odds: HTMLElement | null = null;
     if (playing && v.leaked) {
       const out = resolve(m, v.leaked);
@@ -84,7 +89,7 @@ export function runScreen(app: App): HTMLElement {
       odds = h('span', { class: 'odds', title: known.label }, `win ${pct(o.win)} · lose ${pct(o.loss)}`);
     }
     return h('button', {
-      class: `throw tree-${treeOf(m)} ${selected ? 'selected' : ''}`,
+      class: `throw tree-${treeOf(m)}`,
       id: `throw-${m}`, disabled: !ok, 'aria-keyshortcuts': m.toLowerCase(),
       'aria-label': `Throw ${MOVE_NAME[m]}${save > 0 ? `, save chance ${pct(save)}` : ''}${cost ? `, costs ${cost} coins` : ''}`,
       onclick: () => app.actions.throwMove(m),
@@ -93,14 +98,14 @@ export function runScreen(app: App): HTMLElement {
       h('span', { class: 'throw-name' }, MOVE_NAME[m]),
       odds,
       h('span', { class: 'throw-meta' },
-        h('kbd', null, m),
         save > 0 ? h('span', { class: 'save-tag' }, `save ${pct(save)}`) : h('span', { class: 'save-tag none' }, 'no save'),
-        cost ? h('span', { class: 'tax-tag' }, `−${cost}¢`) : null));
+        cost ? h('span', { class: 'tax-tag' }, `−${cost}¢`) : null,
+        playing && routineNext?.m === m ? h('span', { class: 'routine-tag', title: 'Show Your Work: the next throw of your routine' }, `routine ${routineNext.step}/${ROUTINE_LEN}`) : null));
   });
 
   const allIn = allInAvailable(s) ? h('label', { class: `allin ${app.allIn ? 'on' : ''}`, for: 'allin' },
     h('input', { type: 'checkbox', id: 'allin', checked: app.allIn, disabled: !playing, onchange: () => app.actions.toggleAllIn() }),
-    h('span', null, h('b', null, 'ALL-IN'), ' next throw: win pays ×3, tie pays 0, saves off'), h('kbd', null, 'A')) : null;
+    h('span', null, h('b', null, 'ALL-IN'), ' next throw: win pays ×3, tie pays 0, saves off')) : null;
 
   const prompt = playing
     ? h('div', { class: `your-move ${last ? 'pulse' : ''}`, 'data-fx': 'prompt' }, h('span', { class: 'your-move-label' }, `Round ${s.round + 1} · your move`),

@@ -4,7 +4,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRun, playRound, buyUpgrade, buyLife, rerollStore, leaveStore, eligibleUpgrades, rerollableOffers, RuleError, validateState } from '../src/core/engine';
 import { dbgAddUpgrade, dbgForceOutcome, dbgForceOpponent, dbgJumpToStage, dbgSetOpponent, dbgSkipToStore, dbgAddCurrency } from '../src/core/debug';
-import { effectiveSaveChance, lifePrice, opponentRerollPrice, storeRerollPrice, upgradePrice, canThrow } from '../src/core/rules';
+import { effectiveSaveChance, lifePrice, opponentRerollPrice, storeRerollPrice, upgradePrice, canThrow, intelFlags } from '../src/core/rules';
+import { routineOf, ROUTINES } from '../src/content/upgrades';
 import { getIntel } from '../src/core/intel';
 import { opponentDistribution } from '../src/core/opponentModel';
 import { getUpgrade, owned, UPGRADES } from '../src/core/registry';
@@ -142,7 +143,7 @@ test('Rock Bottom: +20% Rock save only with 0 Extra Lives', () => {
 });
 
 test('No Thoughts Just Rock: +20% Rock save, +2 on wins/ties, hides ALL intel', () => {
-  const s = arena({ opp: 'repeater', ups: ['do-your-research', 'spreadsheet', 'read-the-instructions', 'mastermind', 'cold-read', 'notes-app'] });
+  const s = arena({ opp: 'repeater', ups: ['do-your-research', 'spreadsheet', 'read-the-instructions', 'mastermind', 'cold-read', 'show-your-work'] });
   for (let i = 0; i < 5; i++) play(s, 'R', 'TIE');
   assert.ok(getIntel(s).visibleHistory.length > 0);
   dbgAddUpgrade(s, 'no-thoughts');
@@ -162,7 +163,7 @@ test('No Thoughts Just Rock: +20% Rock save, +2 on wins/ties, hides ALL intel', 
 test('No Thoughts and intel upgrades are never offered together', () => {
   const a = arena({ ups: ['no-thoughts'] });
   const offered = eligibleUpgrades(a).map((d) => d.id);
-  for (const id of ['do-your-research', 'notes-app', 'spreadsheet', 'predictive-analytics', 'cold-read', 'read-the-instructions', 'mastermind', 'five-year-plan', 'due-diligence', 'i-have-sources'])
+  for (const id of ['do-your-research', 'show-your-work', 'spreadsheet', 'predictive-analytics', 'cold-read', 'read-the-instructions', 'mastermind', 'five-year-plan', 'due-diligence', 'i-have-sources'])
     assert.ok(!offered.includes(id), `${id} offered alongside No Thoughts`);
   assert.ok(offered.includes('confirmation-bias'), 'non-intel Paper upgrades stay available');
   const b = arena({ ups: ['do-your-research'] });
@@ -227,13 +228,27 @@ test('Do Your Research: costs 5, reveals tendencies, and is in the first store',
   }
 });
 
-test('Notes App: history window 10 and correct throw counts', () => {
-  const s = arena({ ups: ['notes-app'], lives: 99 });
-  const seq: Move[] = ['R', 'R', 'P', 'S', 'R', 'P', 'R', 'R', 'S', 'P', 'R', 'R'];
-  for (const m of seq) { dbgForceOpponent(s, m); playRound(s, 'R'); }
-  const v = getIntel(s);
-  assert.equal(v.visibleHistory.length, 10);
-  assert.deepEqual(v.frequencies, [7, 3, 2]);
+test('Show Your Work: finishing the 4-throw routine adds +2% leak chance (max +10%), then a new routine starts', () => {
+  const s = arena({ ups: ['show-your-work'], lives: 99 });
+  const u = () => s.owned.find((o) => o.id === 'show-your-work')!;
+  assert.equal(intelFlags(s).leakChance, 0);
+  // a wrong throw in the middle restarts the routine
+  const r0 = routineOf(u());
+  dbgForceOpponent(s, 'R'); playRound(s, r0[0]);
+  dbgForceOpponent(s, 'R'); playRound(s, r0[1]);
+  const wrong = (['R', 'P', 'S'] as Move[]).find((m) => m !== r0[2] && m !== r0[0])!;
+  dbgForceOpponent(s, 'R'); playRound(s, wrong);
+  assert.equal(u().data.step, 0);
+  for (let k = 1; k <= 7; k++) {
+    const r = routineOf(u());
+    for (const m of r) { dbgForceOpponent(s, 'R'); const res = playRound(s, m); if (s.status === 'store') leaveStore(s); void res; }
+    assert.equal(u().data.done, k);
+    close(intelFlags(s).leakChance, Math.min(0.1, 0.02 * k));
+    if (k < ROUTINES.length) assert.notEqual(routineOf(u()).join(), r.join(), 'the next routine is different');
+  }
+  // stacks with Mastermind
+  dbgAddUpgrade(s, 'mastermind');
+  close(intelFlags(s).leakChance, 0.3);
 });
 
 test('Agree to Disagree: +5 per copy on genuine ties, not on saves', () => {
@@ -596,7 +611,7 @@ test('every upgrade is exercised by at least one test in this file', () => {
   void src;
   // Upgrade ids covered above (kept explicit so a new upgrade without a test fails loudly).
   const covered = ['thick-skull', 'muscle-memory', 'brute-force', 'stone-cold', 'rock-collection', 'dig-in', 'rocks-are-heavy', 'geological-advantage', 'bedrock', 'big-rock-theory', 'rock-bottom', 'no-thoughts', 'built-different', 'monolith', 'absolute-unit',
-    'do-your-research', 'notes-app', 'agree-to-disagree', 'confirmation-bias', 'study-session', 'cold-read', 'paper-trail', 'snip-snip', 'close-shave', 'spreadsheet', 'peer-review', 'five-year-plan', 'due-diligence', 'compound-interest', 'predictive-analytics', 'i-have-sources', 'contingency-plan', 'read-the-instructions', 'mastermind',
+    'do-your-research', 'show-your-work', 'agree-to-disagree', 'confirmation-bias', 'study-session', 'cold-read', 'paper-trail', 'snip-snip', 'close-shave', 'spreadsheet', 'peer-review', 'five-year-plan', 'due-diligence', 'compound-interest', 'predictive-analytics', 'i-have-sources', 'contingency-plan', 'read-the-instructions', 'mastermind',
     'risky-business', 'go-for-it', 'momentum', 'just-one-more', 'cut-corners', 'yolo', 'high-stakes', 'sharpening-stone', 'standoff', 'maximum-effort', 'double-or-nothing', 'hush-money', 'death-wish', 'this-seems-fine', 'insurance-fraud', 'glass-cannon', 'no-safety-net'];
   const missing = UPGRADES.map((u) => u.id).filter((id) => !covered.includes(id));
   assert.deepEqual(missing, []);

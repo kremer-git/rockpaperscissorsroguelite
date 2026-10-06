@@ -1,5 +1,5 @@
 import type { GameState, IntelFlags, Move, OwnedUpgrade, RoundContext, UpgradeDef } from '../core/types';
-import { beats } from '../core/rps';
+import { beats, MOVE_NAME } from '../core/rps';
 import { clamp, lastPlayerMove, num, pct, rockStreak, tieStreak, winStreak } from '../core/helpers';
 import { nextRandom } from '../core/rng';
 
@@ -167,6 +167,12 @@ const CONTINGENCY = 1;
 const COLD_READ = 0.12; // per copy, up to 2 copies
 const INSTRUCTIONS = 0.85;
 const TRAIL_PER = 0.03, TRAIL_MAX = 3; // per receipt; receipts per copy
+// Show Your Work: a 4-throw routine; each one finished adds a little leak chance, capped. The routine changes after
+// each completion (so an opponent that reads you can't simply sit on it), cycling through this list.
+export const ROUTINE_LEN = 4, ROUTINE_PER = 0.02, ROUTINE_MAX = 0.1;
+export const ROUTINES: Move[][] = [['R', 'P', 'S', 'P'], ['P', 'P', 'R', 'S'], ['S', 'R', 'R', 'P'], ['P', 'S', 'P', 'R'], ['R', 'S', 'P', 'S'], ['S', 'P', 'R', 'R']];
+export const routineOf = (u: OwnedUpgrade): Move[] => ROUTINES[num(u, 'done') % ROUTINES.length];
+export const routineBonus = (u: OwnedUpgrade): number => Math.min(ROUTINE_MAX, ROUTINE_PER * num(u, 'done'));
 
 function oppMostCommon(s: GameState): Move | null {
   const h = s.stageHistory;
@@ -184,10 +190,25 @@ const PAPER: UpgradeDef[] = [
     intel: (f) => { f.behaviourText = true; },
   },
   {
-    id: 'notes-app', name: 'Notes App', tree: 'paper', rarity: 'common', cost: 0, maxStacks: 1, icon: 'up.notes',
-    tags: ['info'], flavor: '47 notes titled “thoughts”.',
-    describe: () => 'History shows the last 10 rounds instead of 5, plus a running count of what this opponent has thrown.',
-    intel: (f) => { f.historyWindow = Math.max(f.historyWindow, 10); f.frequencies = true; },
+    id: 'show-your-work', name: 'Show Your Work', tree: 'paper', rarity: 'common', cost: 0, maxStacks: 1, icon: 'up.routine',
+    tags: ['pattern', 'scaling', 'info', 'leak'], flavor: 'Partial credit for following the steps.',
+    describe: () => `Play the routine shown in your build (${ROUTINE_LEN} throws in a row, any results). Each time you finish it, +${pct(ROUTINE_PER)} chance each round that the opponent’s throw leaks to you before you choose (max +${pct(ROUTINE_MAX)}). Then a new routine starts. Keeps all run.`,
+    onRoundEnd: (ctx, u) => {
+      const r = routineOf(u);
+      const step = num(u, 'step');
+      if (ctx.player === r[step]) u.data.step = step + 1;
+      else u.data.step = ctx.player === r[0] ? 1 : 0;
+      if (u.data.step >= ROUTINE_LEN) {
+        u.data.step = 0;
+        u.data.done = num(u, 'done') + 1;
+        ctx.triggers.push({ source: 'show-your-work', text: `Routine done! Leak chance +${pct(routineBonus(u))}` });
+      }
+    },
+    intel: (f, u) => { f.leakChance += routineBonus(u); },
+    scaling: {
+      label: 'Routines finished', cap: `+${pct(ROUTINE_MAX)} leak chance`,
+      value: (_s, u) => `${num(u, 'done')} (+${pct(routineBonus(u))} leak) · next: ${routineOf(u).map((m, i) => (i < num(u, 'step') ? `✓${MOVE_NAME[m]}` : MOVE_NAME[m])).join(', ')}`,
+    },
   },
   {
     id: 'agree-to-disagree', name: 'Agree to Disagree', tree: 'paper', rarity: 'common', cost: 0, maxStacks: 2, icon: 'up.handshake',
@@ -311,7 +332,7 @@ const PAPER: UpgradeDef[] = [
     id: 'mastermind', name: 'Mastermind', tree: 'paper', rarity: 'legendary', cost: 0, maxStacks: 1, icon: 'up.mastermind',
     tags: ['info', 'leak'], flavor: 'Has a guy on the inside. The guy is also a rock.',
     describe: () => `Each round there is a ${pct(MASTERMIND)} chance the opponent’s locked-in throw leaks to you before you choose. You’ll see a banner when it happens.`,
-    intel: (f) => { f.leakChance = Math.max(f.leakChance, MASTERMIND); },
+    intel: (f) => { f.leakChance += MASTERMIND; },
   },
 ];
 

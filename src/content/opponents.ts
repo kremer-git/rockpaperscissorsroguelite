@@ -128,9 +128,9 @@ export const OPPONENTS: OpponentDef[] = [
   },
   {
     id: 'nash', name: 'John', title: 'Has No Tells. None.', archetype: 'The Nash Equilibrium', portrait: 'opp.nash', tier: 'elite', difficulty: 5, weight: 0.5,
-    flavor: 'Emotionally unavailable. Mathematically unbeatable.',
-    tell: 'Perfectly random. No pattern exists. Your only tools here are saves, lives, and an opponent reroll.',
-    base: [1, 1, 1], randomness: 1 / 3,
+    flavor: 'Emotionally unavailable. Claims to be mathematically unbeatable.',
+    tell: 'Plays one throw most (about 60%), one sometimes (30%) and one rarely (10%). Which is which is new every time you meet him, and he re-deals it whenever you beat him twice in a row.',
+    base: [1, 1, 1], randomness: 0.04, shuffledBase: [6, 3, 1], reshuffleAfterWins: 2,
   },
 ];
 

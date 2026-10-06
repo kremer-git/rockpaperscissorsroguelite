@@ -245,11 +245,10 @@ test('intel is gated by upgrades (information as progression)', () => {
   assert.equal(v.showTell, false);
   assert.equal(v.frequencies, null);
   assert.equal(v.prediction, null);
-  dbgAddUpgrade(s, 'do-your-research'); dbgAddUpgrade(s, 'notes-app'); dbgAddUpgrade(s, 'spreadsheet');
+  dbgAddUpgrade(s, 'do-your-research'); dbgAddUpgrade(s, 'show-your-work'); dbgAddUpgrade(s, 'spreadsheet');
   toStore(s); leaveStore(s);
   v = getIntel(s);
   assert.equal(v.showTell, true);
-  assert.ok(v.frequencies);
   assert.ok(v.prediction);
   // predictions never claim certainty
   for (let i = 0; i < 30 && s.status === 'playing'; i++) {

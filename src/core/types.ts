@@ -130,6 +130,8 @@ export interface RoundPrediction {
   predicted: Move; // most likely opponent throw according to the estimator
   recommended: Move; // throw that minimises loss after your saves
   confidence: 'Low' | 'Medium' | 'High';
+  /** Low confidence because there are only a few rounds to go on (vs. an opponent who is just hard to read). */
+  thin?: boolean;
 }
 
 export interface RoundContext {
@@ -271,6 +273,10 @@ export interface OpponentDef {
   tiltAfterLosses?: { losses: number; weight: number }; // specialists: after N straight losses, lean away from favourite
   /** Loop: plays a fixed sequence of `minLen`–`maxLen` throws, new each encounter, from the start every time you meet. */
   loop?: { weight: number; minLen: number; maxLen: number };
+  /** John: these base weights (e.g. 60/30/10) are dealt to Rock/Paper/Scissors in a fresh order every encounter. */
+  shuffledBase?: Dist;
+  /** John: re-deal the shuffled split after the player beats him this many times in a row. */
+  reshuffleAfterWins?: number;
   /** Superstitious: after a throw loses, that throw is nearly banned next round (weight multiplier, e.g. 0.05). */
   avoidLoser?: number;
   /** Mood swings: every `period` rounds, switch between two behaviour sets (A first). */

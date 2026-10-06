@@ -1,3 +1,4 @@
+import { musicButton } from './soundDock';
 import type { App } from './app';
 
 declare const __DEBUG__: boolean;
@@ -51,12 +52,13 @@ export function titleScreen(app: App): HTMLElement {
       h('p', { class: 'logo-sub' }, 'The Roguelite'),
       h('p', { class: 'tagline' }, 'It’s just Rock, Paper, Scissors. With a build. And an economy. And store gaps that grow like Fibonacci because of course they do.')),
     h('div', { class: 'title-actions' },
-      app.hasSave ? h('button', { class: 'btn primary big', id: 'resume', onclick: () => app.actions.resume() }, 'Resume run', h('kbd', null, 'C')) : null,
-      h('button', { class: `btn ${app.hasSave ? '' : 'primary'} big`, id: 'start', onclick: () => app.actions.start() }, 'Start run', h('kbd', null, 'Enter')),
-      h('button', { class: 'btn big', id: 'howto', onclick: () => app.actions.go('howto') }, 'How to play', h('kbd', null, 'H'))),
+      app.hasSave ? h('button', { class: 'btn primary big', id: 'resume', onclick: () => app.actions.resume() }, 'Resume run') : null,
+      h('button', { class: `btn ${app.hasSave ? '' : 'primary'} big`, id: 'start', onclick: () => app.actions.start() }, 'Start run'),
+      h('button', { class: 'btn big', id: 'howto', onclick: () => app.actions.go('howto') }, 'How to play')),
+    app.prefs.audio.musicOn ? null : h('div', { class: 'title-music' }, musicButton(app, 'title-music-on')),
     h('label', { class: `mode-toggle ${hard ? 'on' : ''}`, for: 'hard-mode' },
       h('input', { type: 'checkbox', id: 'hard-mode', checked: hard, onchange: () => app.actions.setPrefs((q) => { q.hardMode = !q.hardMode; }) }),
-      h('span', null, h('b', null, 'Hard Mode'), hard ? ': start with 0 Extra Lives. Good luck.' : ': start with 0 Extra Lives instead of 3.'), h('kbd', null, 'M')),
+      h('span', null, h('b', null, 'Hard Mode'), hard ? ': start with 0 Extra Lives. Good luck.' : ': start with 0 Extra Lives instead of 3.')),
     h('div', { class: 'seed-block' },
       h('form', { class: 'seed-form', onsubmit: (e: Event) => { e.preventDefault(); startSeeded(); } },
         h('label', { for: 'seed-input', class: 'small muted' }, 'Play a specific seed'),
@@ -90,7 +92,7 @@ function foesCollection(app: App, p: Progress): HTMLElement {
 }
 
 const STEPS: [string, string][] = [
-  ['Throw', 'Pick Rock, Paper or Scissors (keys R, P, S). Rock beats Scissors, Scissors beats Paper, Paper beats Rock. The opponent locks in its throw before you choose.'],
+  ['Throw', 'Tap Rock, Paper or Scissors. Rock beats Scissors, Scissors beats Paper, Paper beats Rock. The opponent locks in its throw before you choose.'],
   ['Win for coins', 'A win pays 12 coins. A tie pays 5 and the run continues. After each result the buttons light up again: keep throwing until the store.'],
   ['Losing ends the run', 'Unless you own an Extra Life, which is used up instead. You start with 3 (0 in Hard Mode).'],
   ['Shop at stores', 'Stores sell upgrades, Extra Lives, rerolls of the offers, and a swap of your next opponent. You always see who’s next before you leave.'],
@@ -111,10 +113,10 @@ export function howtoScreen(app: App): HTMLElement {
       h('p', { class: 'howto-body' }, body),
       h('ol', { class: 'howto-dots', 'aria-hidden': 'true' }, STEPS.map((_, k) => h('li', { class: k === i ? 'on' : k < i ? 'done' : '' }))),
       h('div', { class: 'howto-nav' },
-        h('button', { class: 'btn', id: 'howto-back', onclick: () => (i === 0 ? app.actions.go('title') : app.actions.setHowto(i - 1)) }, i === 0 ? 'Back to title' : 'Previous', h('kbd', null, '←')),
+        h('button', { class: 'btn', id: 'howto-back', onclick: () => (i === 0 ? app.actions.go('title') : app.actions.setHowto(i - 1)) }, i === 0 ? 'Back to title' : 'Previous'),
         i < STEPS.length - 1
-          ? h('button', { class: 'btn primary', id: 'howto-next', onclick: () => app.actions.setHowto(i + 1) }, 'Next', h('kbd', null, '→'))
-          : h('button', { class: 'btn primary', id: 'howto-start', onclick: () => app.actions.start() }, 'Start a run', h('kbd', null, 'Enter')))));
+          ? h('button', { class: 'btn primary', id: 'howto-next', onclick: () => app.actions.setHowto(i + 1) }, 'Next')
+          : h('button', { class: 'btn primary', id: 'howto-start', onclick: () => app.actions.start() }, 'Start a run'))));
 }
 export const HOWTO_STEPS = STEPS.length;
 
@@ -161,9 +163,9 @@ export function gameOverScreen(app: App): HTMLElement {
               h('span', { class: 'small muted opp-li-tell' }, o.tell)));
         })))),
     h('div', { class: 'over-actions' },
-      h('button', { class: 'btn primary big', id: 'restart', onclick: () => app.actions.start() }, 'One more run', h('kbd', null, 'Enter')),
-      h('button', { class: 'btn big', id: 'replay-seed', onclick: () => app.actions.start(s.seed, s.mode) }, 'Replay this seed', h('kbd', null, 'Y')),
-      h('button', { class: 'btn big', id: 'to-title', onclick: () => app.actions.go('title') }, 'Title screen', h('kbd', null, 'T'))),
+      h('button', { class: 'btn primary big', id: 'restart', onclick: () => app.actions.start() }, 'One more run'),
+      h('button', { class: 'btn big', id: 'replay-seed', onclick: () => app.actions.start(s.seed, s.mode) }, 'Replay this seed'),
+      h('button', { class: 'btn big', id: 'to-title', onclick: () => app.actions.go('title') }, 'Title screen')),
     h('p', { class: 'small muted foot seed-line' }, 'Seed ', h('span', { id: 'seed-value', class: 'num' }, String(s.seed)), ' ',
       h('button', { class: 'btn small', id: 'copy-seed', onclick: () => copyText(app, String(s.seed), 'seed-value') }, 'Copy')));
 }

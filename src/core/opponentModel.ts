@@ -44,6 +44,21 @@ export function loopSequence(s: GameState): Move[] | null {
   return Array.from({ length: m.loopLen }, (_, i) => MOVES[m[`l${i}`]]);
 }
 
+/** Where John last re-dealt his split, worked out from the visible history alone (0 = start of the encounter). */
+export function lastRedeal(h: { rawOutcome: string }[], n: number): number {
+  let at = 0;
+  if (n <= 0) return 0;
+  for (let k = n; k <= h.length; k++) if (at <= k - n && h.slice(k - n, k).every((r) => r.rawOutcome === 'WIN')) at = k;
+  return at;
+}
+
+/** John's base weights for this encounter (null before his first round, or for anyone else). */
+export function shuffledBaseOf(s: GameState, def: OpponentDef): Dist | null {
+  const m = s.opponentMemory;
+  if (!def.shuffledBase || m.sb0 === undefined) return null;
+  return [def.shuffledBase[m.sb0], def.shuffledBase[m.sb1], def.shuffledBase[m.sb2]];
+}
+
 /** Advance behaviour that has its own clock (Gambler, Loop, Bluffer). Called once per round start. */
 export function tickOpponentMemory(s: GameState): void {
   const def = getOpponent(s.opponentId);
@@ -60,6 +75,21 @@ export function tickOpponentMemory(s: GameState): void {
       seq.forEach((v, i) => { s.opponentMemory[`l${i}`] = v; });
       break;
     }
+  }
+  const h = s.stageHistory;
+  const n = def.reshuffleAfterWins ?? 0;
+  const beatenAgain = n > 0 && h.length >= n && h.slice(-n).every((r) => r.rawOutcome === 'WIN') && (s.opponentMemory.sbAt ?? -1) <= h.length - n;
+  if (def.shuffledBase && (s.opponentMemory.sb0 === undefined || beatenAgain)) {
+    if (beatenAgain) s.opponentMemory.sbAt = h.length;
+    // Deal the split to the three throws in a random order for this encounter (stored as sb0..sb2 = share index).
+    const prev = [0, 1, 2].map((i) => s.opponentMemory[`sb${i}`]).join();
+    let order = [0, 1, 2];
+    for (let tries = 0; tries < 8; tries++) {
+      order = [0, 1, 2];
+      for (let i = 2; i > 0; i--) { const j = randInt(s, 0, i); [order[i], order[j]] = [order[j], order[i]]; }
+      if (order.join() !== prev) break; // a re-deal always changes something
+    }
+    order.forEach((v, i) => { s.opponentMemory[`sb${i}`] = v; });
   }
   // Bluffer: announce this round's "throw" (a fair coin among the three; the bluff is in what follows).
   s.opponentSays = def.bluff ? MOVES[randInt(s, 0, 2)] : null;
@@ -93,8 +123,9 @@ function distributionFor(s: GameState, def: OpponentDef): { dist: Dist; reactive
   const hist = s.stageHistory;
   const last = hist[hist.length - 1];
   const prev2 = hist[hist.length - 2];
-  const baseSum = def.base[0] + def.base[1] + def.base[2];
-  const base: Dist = [def.base[0] / baseSum, def.base[1] / baseSum, def.base[2] / baseSum];
+  const b0 = shuffledBaseOf(s, def) ?? def.base;
+  const baseSum = b0[0] + b0[1] + b0[2];
+  const base: Dist = [b0[0] / baseSum, b0[1] / baseSum, b0[2] / baseSum];
   const reactive: Dist = [0, 0, 0]; // based on the opponent's own throws / results
   const adaptive: Dist = [0, 0, 0]; // based on the PLAYER's throws
 
