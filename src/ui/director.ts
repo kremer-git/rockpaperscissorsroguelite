@@ -174,6 +174,8 @@ export function overIntro(): void {
 
 // ---------------- store: deal, gap count-up, legendary shimmer, bought stamp ----------------
 let dealtKey = '';
+let dealStart = 0;
+let dealSlots: string[] = [];
 /** A new run starts: store effects (deal, gap count-up) are keyed per run, so forget the last run's keys. */
 export function newRun(): void { dealtKey = ''; dreadVisit = -1; dreadState = 'none'; dreadObserver?.disconnect(); dreadObserver = null; }
 // Dread count-up state for the current store visit. The store re-renders on every purchase (new DOM), so a
@@ -188,16 +190,32 @@ export function store(app: App): void {
   const motion = motionOK();
   if (key !== dealtKey) {
     dealtKey = key;
-    const cards = [...document.querySelectorAll<HTMLElement>('.offers .up-card')];
+    dealStart = performance.now();
+    const cards = [...document.querySelectorAll<HTMLElement>('.offers .up-card:not(.sold-card)')];
+    dealSlots = cards.map((c) => c.dataset.slot ?? '');
     if (motion) {
-      cards.forEach((c, i) => {
-        c.style.setProperty('--i', String(i)); replay(c, 'deal'); c.classList.add('dealing');
-        window.setTimeout(() => playSynth('deal', 1 + i * 0.06), 70 * i);
-        window.setTimeout(() => document.querySelector(`.offers .up-card[data-slot="${c.dataset.slot}"]`)?.classList.remove('dealing'), 70 * i + 300);
-      });
-      const legend = cards.find((c) => c.classList.contains('rarity-card-legendary') && !c.classList.contains('sold-card'));
-      if (legend) window.setTimeout(() => { playSynth('shimmer'); replay(legend, 'reveal'); }, 70 * cards.indexOf(legend) + 380);
+      cards.forEach((c, i) => window.setTimeout(() => playSynth('deal', 1 + i * 0.06), 70 * i));
+      const legend = cards.find((c) => c.classList.contains('rarity-card-legendary'));
+      if (legend) window.setTimeout(() => { playSynth('shimmer'); replay(document.querySelector(`.offers .up-card[data-slot="${legend.dataset.slot}"]`), 'reveal'); }, 70 * cards.indexOf(legend) + 380);
     }
+  }
+  // Deal-in: (re)applied on every render inside the deal window, picking up where it was, so a re-render mid-deal
+  // (a toast clearing, a purchase) doesn't make the remaining cards pop in. Only cards that are new get dealt:
+  // on a reroll, bought cards stay put (and greyed out).
+  if (motion) {
+    const elapsed = performance.now() - dealStart;
+    dealSlots.forEach((slot, i) => {
+      if (elapsed > 70 * i + 420) return;
+      const c = document.querySelector<HTMLElement>(`.offers .up-card[data-slot="${slot}"]:not(.sold-card)`);
+      if (!c || c.classList.contains('deal')) return;
+      c.style.setProperty('--i', String(i));
+      c.style.animationDelay = `${70 * i - elapsed}ms`;
+      c.classList.add('deal');
+      if (elapsed < 70 * i + 300) {
+        c.classList.add('dealing');
+        window.setTimeout(() => document.querySelector(`.offers .up-card[data-slot="${slot}"]`)?.classList.remove('dealing'), 70 * i + 300 - elapsed);
+      }
+    });
   }
   // 10: dreaded gap count-up (once per store visit, when the number is actually on screen)
   const num = document.querySelector<HTMLElement>('.stretch-num');

@@ -124,14 +124,22 @@ export function coinsToHud(from: DOMRect | null, amount: number, before: number,
 
 /** Purple shield ring that snaps around an element (a save). */
 export function shieldAround(el: Element | null): void {
-  if (!el || !motionOK()) return;
-  const r = el.getBoundingClientRect();
-  if (!onScreen(r)) return;
-  const pad = 14;
-  const ring = h('div', { class: 'shield-ring', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/></svg>' });
-  ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px`;
-  layer().append(ring);
-  window.setTimeout(() => ring.remove(), 900);
+  if (!(el instanceof HTMLElement) || !motionOK() || !el.parentElement) return;
+  // The ring lives next to the throw (not in the fixed overlay) and is placed from layout offsets, so it stays
+  // centred on the throw even while the result is still popping in (that pop scales the whole clash).
+  const host = el.parentElement;
+  host.classList.add('shield-host');
+  const pad = 12;
+  const ring = h('div', { class: 'shield-ring' },
+    h('span', { class: 'shield-badge', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/></svg>' }));
+  // Exact (sub-pixel) placement in the host's own coordinates: divide out whatever scale the pop is at right now.
+  const hr = host.getBoundingClientRect(), er = el.getBoundingClientRect();
+  const k = host.offsetWidth ? hr.width / host.offsetWidth : 1;
+  const x = (er.left - hr.left) / k - host.clientLeft, y = (er.top - hr.top) / k - host.clientTop;
+  const w = er.width / k, hgt = er.height / k;
+  ring.style.cssText = `left:${x - pad}px;top:${y - pad}px;width:${w + pad * 2}px;height:${hgt + pad * 2}px`;
+  host.append(ring);
+  window.setTimeout(() => ring.remove(), 1300);
 }
 
 export function sparkle(at: DOMRect, n = 14): void {

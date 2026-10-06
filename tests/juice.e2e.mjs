@@ -102,9 +102,22 @@ for (const kind of ['desktop', 'phone']) {
     await clearSfx(page);
     await throwR(page);
     await page.waitForTimeout(360);
-    const shield = !!(await page.$('#fx-layer .shield-ring'));
+    const shield = !!(await page.$('.clash .shield-ring'));
     await shot(page, '04-save-shield');
     check(`${kind}: save: purple shield snaps around your throw (+ shield sound)`, shield && (await sfx(page)).includes('save') && !!(await page.$('.result.out-saved')));
+    await page.waitForTimeout(500); // the result pop (which scales the clash) has finished; badge has settled
+    const geo = await page.evaluate(() => {
+      const chip = document.querySelector('.clash .clash-side:first-child .move-chip').getBoundingClientRect();
+      const ring = document.querySelector('.shield-ring')?.getBoundingClientRect();
+      const badge = document.querySelector('.shield-badge')?.getBoundingClientRect();
+      if (!ring || !badge) return null;
+      const c = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      const cc = c(chip), rc = c(ring), bc = c(badge), rad = ring.width / 2;
+      return { dx: Math.abs(cc.x - rc.x), dy: Math.abs(cc.y - rc.y), bigger: ring.width > chip.width, bx: Math.abs(bc.x - (rc.x + rad * 0.7071)), by: Math.abs(bc.y - (rc.y - rad * 0.7071)) };
+    });
+    await shot(page, '04-save-shield-settled');
+    check(`${kind}: save: ring is centred on YOUR throw`, !!geo && geo.dx < 2 && geo.dy < 2 && geo.bigger, JSON.stringify(geo));
+    check(`${kind}: save: shield badge sits on the ring's upper-right edge`, !!geo && geo.bx < 4 && geo.by < 4, JSON.stringify(geo));
     // 5: breathing
     const breathe = await page.$eval('.opp-head .portrait .asset-img', (e) => getComputedStyle(e).animationName);
     check(`${kind}: opponent portrait breathes (subtle idle loop)`, breathe === 'breathe', breathe);
@@ -162,6 +175,19 @@ for (const kind of ['desktop', 'phone']) {
     check(`${kind}: buying stamps the card and a token flies to your build`, stamp.stamp && stamp.token && (await sfx(page)).includes('stamp'), JSON.stringify(stamp));
     await page.waitForTimeout(800);
     check(`${kind}: flying token cleans up`, !(await page.$('#fx-layer .fly')));
+    const soldOpacity = async () => page.$eval(`.offers .up-card[data-slot="${slot}"]`, (c) => ({ sold: c.classList.contains('sold-card'), op: Number(getComputedStyle(c).opacity), cls: c.className, anim: getComputedStyle(c).animationName }));
+    const before = await soldOpacity();
+    await clearSfx(page);
+    const rr = page.locator('#reroll-store'); await rr.scrollIntoViewIfNeeded();
+    if (kind === 'phone') await rr.tap(); else await rr.click();
+    await page.waitForTimeout(150);
+    const dealtNow = await page.$$eval('.offers .up-card', (cs) => cs.map((c) => ({ sold: c.classList.contains('sold-card'), deal: c.classList.contains('deal') })));
+    await page.waitForTimeout(700);
+    const after = await soldOpacity();
+    await page.locator(`.offers .up-card[data-slot="${slot}"]`).scrollIntoViewIfNeeded();
+    await shot(page, '12-after-reroll');
+    check(`${kind}: after a reroll the bought card stays greyed out`, before.sold && after.sold && after.op < 0.8 && Math.abs(after.op - before.op) < 0.01, JSON.stringify({ before, after }));
+    check(`${kind}: a reroll deals in only the new cards (not the bought one)`, dealtNow.filter((c) => c.sold).every((c) => !c.deal) && dealtNow.filter((c) => !c.sold).every((c) => c.deal) && (await sfx(page)).filter((x) => x === 'deal').length === dealtNow.filter((c) => !c.sold).length, JSON.stringify(dealtNow));
     // 13: find a legendary by rerolling (late stage weights)
     await page.click('#leave-store'); await page.waitForTimeout(100);
     await stage(page, 12);

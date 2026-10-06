@@ -210,6 +210,8 @@ for (const [w, h] of [[1366, 768], [1920, 1080], [2560, 1440]]) {
   await page.keyboard.press('Enter');
   await page.keyboard.press('r');
   await page.keyboard.press('Enter');
+  await page.waitForSelector('.screen.store .rarity-sticker', { timeout: 3000 }).catch(() => {});
+  await page.waitForTimeout(100);
   const ok = await page.$$eval('.rarity-sticker', (els) => els.every((el) => {
     const pips = el.querySelector('.pips');
     return pips && getComputedStyle(pips).color !== getComputedStyle(el).backgroundColor;

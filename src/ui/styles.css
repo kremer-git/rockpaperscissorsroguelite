@@ -567,9 +567,14 @@ html:not(.fit) .screen.run .run-grid { margin-top: 10px; }
 .screen-flash.loss-edges { box-shadow: inset 0 0 110px 26px rgba(255,64,64,.55); animation: edge-flash .52s ease-out forwards; }
 .screen-flash.death-flash { background: rgba(255,50,50,.32); box-shadow: inset 0 0 160px 50px rgba(255,40,40,.7); animation: edge-flash .6s ease-out forwards; }
 @keyframes edge-flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
-.shield-ring { position: absolute; border-radius: 50%; border: 3px solid var(--save); box-shadow: 0 0 18px 4px rgba(182,156,242,.7), inset 0 0 14px rgba(182,156,242,.6); color: var(--save); animation: shield-pop .85s cubic-bezier(.2,1.4,.4,1) forwards; }
-.shield-ring svg { position: absolute; right: -8px; top: -8px; width: 28px; height: 28px; padding: 3px; border-radius: 50%; background: #241c3c; filter: drop-shadow(0 0 4px rgba(182,156,242,.9)); }
-@keyframes shield-pop { 0% { transform: scale(.55); opacity: 0; } 30% { transform: scale(1.08); opacity: 1; } 65% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.04); opacity: 0; } }
+/* Save: a ring centred on your throw; the shield pops up big over the throw, then settles on the ring's
+   upper-right edge (the 45° point of the circle). */
+.shield-host { position: relative; }
+.shield-ring { position: absolute; box-sizing: border-box; z-index: 2; pointer-events: none; border-radius: 50%; border: 3px solid var(--save); box-shadow: 0 0 18px 4px rgba(182,156,242,.7), inset 0 0 14px rgba(182,156,242,.6); color: var(--save); animation: shield-ring 1.25s cubic-bezier(.2,1.3,.4,1) forwards; }
+.shield-badge { position: absolute; left: 85.36%; top: 14.64%; width: 30px; height: 30px; padding: 4px; border-radius: 50%; background: #241c3c; box-shadow: 0 0 0 2px var(--save), 0 0 10px rgba(182,156,242,.9); transform: translate(-50%, -50%); animation: shield-badge 1.25s cubic-bezier(.3,1.2,.4,1) forwards; }
+.shield-badge svg { display: block; width: 100%; height: 100%; }
+@keyframes shield-ring { 0% { transform: scale(.6); opacity: 0; } 18% { transform: scale(1.08); opacity: 1; } 35% { transform: scale(1); } 80% { opacity: 1; } 100% { transform: scale(1.03); opacity: 0; } }
+@keyframes shield-badge { 0% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.4); opacity: 0; } 15% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(2.1); opacity: 1; } 34% { left: 50%; top: 50%; transform: translate(-50%, -50%) scale(1.9); } 55% { left: 85.36%; top: 14.64%; transform: translate(-50%, -50%) scale(1); } 80% { opacity: 1; } 100% { left: 85.36%; top: 14.64%; transform: translate(-50%, -50%) scale(1); opacity: 0; } }
 @keyframes hit { 0% { transform: none; filter: none; } 25% { transform: translateX(9px) rotate(5deg) scale(.94); filter: brightness(1.6) saturate(1.3); } 60% { transform: translateX(-3px) rotate(-1deg); } 100% { transform: none; filter: none; } }
 @keyframes bonk { 0% { transform: none; } 35% { transform: scale(.88); } 70% { transform: scale(1.06); } 100% { transform: none; } }
 @keyframes smug { 0%, 100% { transform: none; } 25% { transform: translateY(-6px) rotate(-3deg); } 50% { transform: none; } 75% { transform: translateY(-4px) rotate(2deg); } }
@@ -611,7 +616,8 @@ html:not(.calm) .progress-track.arrive::after { animation: sweep .8s cubic-bezie
 @keyframes arrive-glow { 0% { box-shadow: 0 0 0 0 rgba(232,185,73,.9); } 40% { box-shadow: 0 0 14px 4px rgba(232,185,73,.7); } 100% { box-shadow: 0 0 0 0 rgba(232,185,73,0); } }
 
 /* 11: card dealing */
-html:not(.calm) .up-card.deal { animation: deal-in .42s cubic-bezier(.2,1.1,.4,1) both; animation-delay: calc(var(--i, 0) * 70ms); }
+/* fill-mode 'backwards' only: once dealt, the card's own styles apply again (a bought card stays greyed out) */
+html:not(.calm) .up-card.deal { animation: deal-in .42s cubic-bezier(.2,1.1,.4,1) backwards; animation-delay: calc(var(--i, 0) * 70ms); }
 @keyframes deal-in { 0% { opacity: 0; transform: translateY(-46px) rotate(calc(-7deg + var(--i, 0) * 4deg)) scale(.9); } 100% { opacity: 1; transform: none; } }
 
 /* 13: legendary shimmer (a slow gold sweep; stronger once when dealt) */

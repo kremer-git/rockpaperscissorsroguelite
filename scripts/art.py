@@ -46,15 +46,20 @@ def cutout(im, tol=34):
     out = im.convert('RGBA'); out.putalpha(mask)
     return out
 
-def centred_square(im, pad=0.06):
+# How much the vertical centre follows visual weight (1) vs the outline's middle (0). The scissors' heavy
+# handle rings pull the weight down, which sat the blades too high in the circle, so it centres on its outline.
+WEIGHT_Y = {'move-S': 0.0}
+
+def centred_square(im, pad=0.06, weight_y=1.0):
     """Square canvas centred on the drawing's visual weight (mean of opaque pixels), big enough that nothing clips."""
     a = im.getchannel('A'); w, h = im.size; px = a.load()
     sx = sy = n = 0
     for y in range(0, h, 2):
         for x in range(0, w, 2):
             if px[x, y] > 40: sx += x; sy += y; n += 1
-    cx, cy = sx / n, sy / n
     x0, y0, x1, y1 = a.point(lambda v: 255 if v > 40 else 0).getbbox()
+    cx = sx / n
+    cy = weight_y * (sy / n) + (1 - weight_y) * (y0 + y1) / 2
     half = max(cx - x0, x1 - cx, cy - y0, y1 - cy) * (1 + pad)
     side = int(2 * half)
     canvas = Image.new('RGBA', (side, side), (0, 0, 0, 0))
@@ -85,7 +90,7 @@ def main(src, size=256):
     for f, name in FILES.items():
         src_im = Image.open(os.path.join(src, f))
         if name.startswith('move-'):
-            im = centred_square(cutout(src_im)).resize((size, size), Image.LANCZOS)
+            im = centred_square(cutout(src_im), weight_y=WEIGHT_Y.get(name, 1.0)).resize((size, size), Image.LANCZOS)
         else:
             im = trophy_card(src_im).resize((size, size), Image.LANCZOS)
         im.save(os.path.join(OUT, name + '.webp'), 'WEBP', quality=86, method=6)
