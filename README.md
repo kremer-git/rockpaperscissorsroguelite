@@ -202,6 +202,14 @@ The Hunch says *not much data yet* during the first few rounds against someone, 
 
 No Thoughts Just Rock hides all of it, so the store never offers it together with intel upgrades.
 
+## itch.io
+
+`dist/` is a ready HTML5 build: zip its contents (`index.html` at the top, with `audio/`, `portraits/` and `art/`, leaving out `artifact.html`) and upload it as an HTML project.
+Recommended embed settings: *Embed in page* at **1280 × 800**, *Mobile friendly* on (phones open it fullscreen), *Fullscreen button* on, and *Scrollbars* on (the phone layout scrolls).
+Saves, the trophy shelf and the collection live in the browser's storage on itch.io's game domain, separate from GitHub Pages and claude.ai.
+
+After the first manual upload, `.github/workflows/itch.yml` publishes every push that changes `dist/` with butler (channel `html5`). It needs a repo secret `BUTLER_API_KEY` (itch.io → Settings → API keys) and a repo variable `ITCH_GAME` (`user/game`, as in the project's itch.io URL); until both exist it skips itself.
+
 ## Debug mode
 
 The published game (`dist/`, GitHub Pages, claude.ai) has **no** debug mode: `scripts/build.mjs` compiles it out (`__DEBUG__ = false`). The test build at `.e2e/index.html` (made by the same command, git-ignored) and `node scripts/build.mjs --dev` include it.

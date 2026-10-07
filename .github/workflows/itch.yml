@@ -1,0 +1,34 @@
+# Publishes the built game (dist/) to itch.io with butler whenever dist/ changes on main.
+# One-time setup (repo Settings → Secrets and variables → Actions):
+#   secret   BUTLER_API_KEY  your itch.io API key (itch.io → Settings → API keys)
+#   variable ITCH_GAME       your itch.io user/game slug, e.g. kremer-git/rock-paper-scissors-roguelite
+# Until both exist this workflow skips itself. The itch.io project page must already exist (create it once by hand).
+name: Publish to itch.io
+
+on:
+  push:
+    branches: [main]
+    paths: ['dist/**']
+  workflow_dispatch:
+
+jobs:
+  butler:
+    runs-on: ubuntu-latest
+    env:
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      ITCH_GAME: ${{ vars.ITCH_GAME }}
+    steps:
+      - name: Skip until itch.io is configured
+        if: env.BUTLER_API_KEY == '' || env.ITCH_GAME == ''
+        run: echo "BUTLER_API_KEY secret or ITCH_GAME variable not set; nothing to publish."
+      - uses: actions/checkout@v4
+        if: env.BUTLER_API_KEY != '' && env.ITCH_GAME != ''
+      - name: Install butler
+        if: env.BUTLER_API_KEY != '' && env.ITCH_GAME != ''
+        run: |
+          curl -sSL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d "$HOME/butler" && chmod +x "$HOME/butler/butler"
+          "$HOME/butler/butler" -V
+      - name: Push dist/ to itch.io (channel html5)
+        if: env.BUTLER_API_KEY != '' && env.ITCH_GAME != ''
+        run: '"$HOME/butler/butler" push dist "$ITCH_GAME:html5" --userversion "$(git rev-parse --short HEAD)"'
