@@ -163,13 +163,15 @@ Cosmetic animations and synthesized sounds layered on top of the game (`src/ui/j
 
 Throw buttons never mark the last throw: no gold ring, and no lift (on touch screens a hover lift used to stick to the last tapped button). With a mouse, hover only brightens a button.
 
-**Reduce animations** (sound menu) or the device's reduced-motion setting turns all of this off. Throws resolve instantly and death goes to the game-over screen after a short pause.
+**Reduce animations** (Settings) or the device's reduced-motion setting turns all of this off. Throws resolve instantly and death goes to the game-over screen after a short pause.
 
 Power-up cards show their tree's Rock/Paper/Scissors drawing plus one small symbol for their main mechanic (`src/ui/mechanics.ts`): save, payout, intel, streak, lives, risk, tie, recharging save, reroll, grows over the run. Hover for the name.
 
 ## Hard Mode, awards and layout
 
-- **Music** is off until you press *Turn on epic music?* (title screen or the speaker menu); then the slider controls it and *Epic music* turns it off again. One 2:24 loop (`audio/music-title.mp3`, 1.7 MB, downloaded only once music is on) plays on every screen. Served over http(s) its volume goes through a Web Audio gain node, because iPhones and iPads ignore an `<audio>` element's volume (that's why the slider used to do nothing on phones). Opened from disk (`file://`) it falls back to the element volume.
+- **Settings** (gear button, bottom left, on every screen): music, effects volume, mute, Reduce animations, and during a run *Return to title screen*. The run is saved on every move, so the title screen then offers *Resume run* (back to the same round or store) or *Start run* (which replaces the saved run).
+- **How to Play** is 8 short pages: the basics, coins and stores, the three trees, lives, opponents and tendencies, the Fibonacci gaps, fairness, and a closing *Go Play* page. Upgrade and opponent counts are filled in from the game data.
+- **Music** is off until you press *Turn on epic music?* (title screen or Settings); then the slider controls it and *Epic music* turns it off again. One 2:24 loop (`audio/music-title.mp3`, 1.7 MB, downloaded only once music is on) plays on every screen. Served over http(s) its volume goes through a Web Audio gain node, because iPhones and iPads ignore an `<audio>` element's volume (that's why the slider used to do nothing on phones). Opened from disk (`file://`) it falls back to the element volume.
 - **Input** is mouse or touch. The old keyboard shortcuts still work but are no longer labelled anywhere.
 - **Hard Mode** (title screen toggle) starts with 0 Extra Lives. Stored in `GameState.mode`; seeds replay in the same mode.
 - **Awards** at 100/200/300/400/500 rounds live on the title-screen trophy shelf (`src/ui/awards.ts`), each with its own trophy picture. Locked trophies show as dark silhouettes. They're saved in browser storage and, on claude.ai for a signed-in viewer, in their private `db` record (`data/users/<id>/awards`), merged as a union so nothing is lost. They grant no power.

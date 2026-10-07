@@ -32,6 +32,7 @@ export interface App {
     rerollOpponent(): void;
     leaveStore(): void;
     goStore(): void;
+    exitToTitle(): void;
     goOver(): void;
     go(screen: Screen): void;
     setHowto(step: number): void;

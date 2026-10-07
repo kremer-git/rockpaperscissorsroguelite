@@ -192,21 +192,21 @@ for (const [w, h] of [[1366, 768], [1920, 1080], [2560, 1440]]) {
   check('losing an Extra Life plays LossOfLife', (await plays()).includes('life-lost.mp3'));
   const musicVol = await page.evaluate(() => Math.max(...[...document.querySelectorAll('audio')].map((a) => a.volume), ...Array.from({ length: 0 })));
   void musicVol;
-  await page.click('#sound-toggle');
+  await page.click('#settings-toggle');
   check('sound dock opens with music/effects sliders (music is on)', !!(await page.$('#vol-music')) && !!(await page.$('#vol-sfx')));
   await page.click('#music-on');
   await page.waitForTimeout(100);
   check('music can be switched off again (the opt-in button returns)', !(await page.$('#vol-music')) && !!(await page.$('#sd-music-on')) && (await page.evaluate(() => window.__fx.audio.current)) === null);
   await page.keyboard.press('Escape');
   await page.keyboard.press('v');
-  check('V mutes (button says Muted)', (await page.textContent('#sound-toggle')).includes('Muted'));
+  check('V mutes (button says Muted)', (await page.textContent('#settings-toggle')).includes('Muted'));
   const before = (await plays()).length;
   await page.keyboard.press('r'); await page.waitForTimeout(100);
   check('muted: throws make no sound', (await plays()).length === before);
   await page.reload();
-  check('mute is remembered after reload', (await page.textContent('#sound-toggle')).includes('Muted'));
+  check('mute is remembered after reload', (await page.textContent('#settings-toggle')).includes('Muted'));
   await page.keyboard.press('v');
-  check('V unmutes', !(await page.textContent('#sound-toggle')).includes('Muted'));
+  check('V unmutes', !(await page.textContent('#settings-toggle')).includes('Muted'));
   await page.close();
 }
 
@@ -458,10 +458,64 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   check(`${w}px title: seed note has breathing room below the seed box`, gap >= 6, `${gap.toFixed(1)}px`);
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/title-tidy-${w}.png` });
   await page.click('#howto');
-  for (let i = 0; i < 12 && await page.$('#howto-next'); i++) { await page.click('#howto-next'); await page.waitForTimeout(40); }
-  const last = await page.innerText('.howto-card');
-  check(`${w}px How to Play ends with the summary page`, /What you’re in for/i.test(last) && /51 upgrades across three skill trees/.test(last) && /20 opponents/.test(last) && /meta-progression/.test(last) && /One more run\?/.test(last), last.slice(0, 120).replace(/\n/g, ' | '));
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/howto-last-${w}.png` });
+  const pages = [];
+  for (let i = 0; i < 12; i++) {
+    pages.push({ title: await page.innerText('.howto-card h2'), body: await page.innerText('.howto-body'), of: await page.innerText('.howto-card .eyebrow') });
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/howto-${i + 1}-${w}.png` });
+    if (!(await page.$('#howto-next'))) break;
+    await page.click('#howto-next'); await page.waitForTimeout(40);
+  }
+  const titles = pages.map((p) => p.title.toLowerCase());
+  const want = ['it’s rock, paper, scissors – duh', 'earn and spend coins', 'build up', 'losing ends the run', 'play 20 unique opponents', 'the gaps grow', 'nothing is rigged', 'go play'];
+  check(`${w}px How to Play: 8 pages in the new order`, titles.join('|') === want.join('|') && /of 8/i.test(pages[0].of), titles.join(' | '));
+  check(`${w}px How to Play: page texts`, pages[0].body.startsWith('The opponent locks in its throw before you choose. Keep playing rounds until you reach a store and then buy power-ups.')
+    && pages[1].body.startsWith('A win pays 12 coins. A tie pays 5 coins.')
+    && /^51 upgrades across 3 skill trees\./.test(pages[2].body)
+    && /^Beat 20 unique opponents\./.test(pages[4].body) && !/streak upgrades/.test(pages[4].body)
+    && pages[6].body.endsWith('Every opponent appears once before anyone repeats.')
+    && /^Zero meta-progression/.test(pages[7].body) && /beat all 20 opponents/.test(pages[7].body) && /One more run\?$/.test(pages[7].body), pages.map((p) => p.body.slice(0, 40)).join(' | '));
+  check(`${w}px How to Play: the last page starts a run`, !!(await page.$('#howto-start')));
+  await page.close();
+}
+
+// ---------- round 10: Settings menu with Return to title screen ----------
+for (const [w, hgt, mobile] of [[1366, 768, false], [390, 844, true]]) {
+  const page = await browser.newPage({ reducedMotion: 'reduce', viewport: { width: w, height: hgt }, hasTouch: mobile, isMobile: mobile });
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  await page.goto(PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
+  const press = (sel) => (mobile ? page.tap(sel) : page.click(sel));
+  check(`${w}px: the corner button is Settings`, /settings/i.test(await page.innerText('#settings-toggle')));
+  await press('#settings-toggle');
+  check(`${w}px title: Settings has sound + display, but no Return to title`, !!(await page.$('#vol-sfx')) && !!(await page.$('#reduce-anim')) && !(await page.$('#exit-to-title')));
+  await press('#settings-toggle');
+  await press('#start');
+  await page.keyboard.press('`'); await page.fill('#dbg-stage', '6'); await page.click('#dbg-jump'); await page.keyboard.press('`');
+  await press('#throw-R'); await page.waitForTimeout(100);
+  await press('#throw-P'); await page.waitForTimeout(100);
+  const before = await page.evaluate(() => ({ round: document.querySelector('.hud-stat .hud-num').textContent, coins: document.querySelector('[data-fx="coins"] .hud-num').textContent }));
+  await press('#settings-toggle');
+  check(`${w}px run: Settings offers Return to title screen`, /Return to title screen/.test(await page.innerText('#settings-panel')));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r10-settings-run-${w}.png` });
+  await press('#exit-to-title');
+  await page.waitForSelector('.screen.title');
+  check(`${w}px: back on the title with Resume run and Start run, settings closed`, !!(await page.$('#resume')) && !!(await page.$('#start')) && !(await page.$('#settings-panel')));
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/r10-title-resume-${w}.png` });
+  await press('#resume');
+  await page.waitForSelector('.screen.run');
+  const after = await page.evaluate(() => ({ round: document.querySelector('.hud-stat .hud-num').textContent, coins: document.querySelector('[data-fx="coins"] .hud-num').textContent }));
+  check(`${w}px: Resume picks the run up where you left it`, JSON.stringify(before) === JSON.stringify(after), `${JSON.stringify(before)} → ${JSON.stringify(after)}`);
+  // from the store too, and a new run replaces the saved one
+  await page.keyboard.press('`'); await page.click('text=Skip to store'); await page.keyboard.press('`');
+  await page.waitForSelector('.screen.store');
+  await press('#settings-toggle'); await press('#exit-to-title');
+  await page.waitForSelector('.screen.title');
+  await press('#resume');
+  check(`${w}px: exiting from a store resumes in that store`, !!(await page.waitForSelector('.screen.store', { timeout: 2000 }).catch(() => null)));
+  await press('#settings-toggle'); await press('#exit-to-title');
+  await press('#start');
+  await page.waitForSelector('.screen.run');
+  check(`${w}px: Start run from the title begins a fresh run`, (await page.evaluate(() => document.querySelector('.hud-stat .hud-num').textContent)).trim() === '1' && /0 to store|1 to store/.test(await page.innerText('.progress')));
   await page.close();
 }
 
@@ -490,7 +544,7 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   const a = await page.evaluate(() => ({ routed: window.__fx.audio.musicRouted(), vol: window.__fx.audio.musicVolume(), el: [...document.querySelectorAll('audio')].length }));
   check('http: music is routed through a gain node', a.routed, JSON.stringify(a));
   check('http: music fades in to the default level (50% of the ceiling)', Math.abs(a.vol - 0.275) < 0.02, String(a.vol));
-  await page.tap('#sound-toggle');
+  await page.tap('#settings-toggle');
   await page.$eval('#vol-music', (el) => { el.value = '10'; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); });
   const v = await page.evaluate(() => window.__fx.audio.musicVolume());
   check('http: the music slider changes the gain (works on iPhone)', Math.abs(v - 0.055) < 0.005, String(v));

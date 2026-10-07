@@ -92,15 +92,14 @@ function foesCollection(app: App, p: Progress): HTMLElement {
 }
 
 const STEPS: [string, string][] = [
-  ['Throw', 'Tap Rock, Paper or Scissors. Rock beats Scissors, Scissors beats Paper, Paper beats Rock. The opponent locks in its throw before you choose.'],
-  ['Win for coins', 'A win pays 12 coins. A tie pays 5 and the run continues. After each result the buttons light up again: keep throwing until the store.'],
+  ['It’s Rock, Paper, Scissors – Duh', 'The opponent locks in its throw before you choose. Keep playing rounds until you reach a store and then buy power‑ups.'],
+  ['Earn and Spend Coins', 'A win pays 12 coins. A tie pays 5 coins. Stores sell upgrades, Extra Lives, rerolls of the offers, and a swap of your next opponent.'],
+  ['Build Up', `${UPGRADES.length} upgrades across 3 skill trees. Rock power‑ups make Rock safer and reward stubbornness. Paper power‑ups help you read the opponent (tendencies, hunches, leaks). Scissors power‑ups turn risk into money. Mix freely.`],
   ['Losing ends the run', 'Unless you own an Extra Life, which is used up instead. You start with 3 (0 in Hard Mode).'],
-  ['Shop at stores', 'Stores sell upgrades, Extra Lives, rerolls of the offers, and a swap of your next opponent. You always see who’s next before you leave.'],
-  ['New opponent, fresh memory', 'Each store brings a new opponent who knows nothing about you. Tendencies are habits, not rules: every opponent can surprise you now and then. When a tendency mentions “your previous throw” or “two rounds ago”, it only counts rounds against that opponent, so their first throw after a store reacts to nothing. Your own streak upgrades (Muscle Memory, Momentum…) do carry over.'],
-  ['Build something', 'Rock makes Rock safer and rewards stubbornness. Paper reads the opponent: tendencies, hunches, leaks. Scissors turns risk into money. Mix freely.'],
+  [`Play ${OPPONENTS.length} Unique Opponents`, `Beat ${OPPONENTS.length} unique opponents. Opponents each have playstyles called Tendencies. Tendencies are merely habits: every opponent can surprise you now and then. When a tendency mentions “your previous throw” or “two rounds ago”, it only counts rounds against that opponent, so their first throw after a store reacts to nothing.`],
   ['The gaps grow', 'Stores come after 1, 2, 3, 5, 8, 13, 21, 34, 55, 89… rounds. There is no cap and no final boss. There is only the next gap.'],
-  ['Nothing is rigged', 'Opponents never look at how long you’ve survived, how rich you are or how strong your build is. Their odds depend only on the history you can see. Everyone appears once before anyone repeats. Your build gets strong; the gaps get longer; eventually probability wins.'],
-  ['What you’re in for', `${UPGRADES.length} upgrades across three skill trees. ${OPPONENTS.length} opponents with habits you can learn. Zero meta-progression: every run starts from scratch, and the trophies and Opponents Defeated collection are just for bragging. One more run?`],
+  ['Nothing is rigged', 'Opponents never look at how long you’ve survived, how rich you are, or how strong your build is. Their odds depend only on the history you can see. Every opponent appears once before anyone repeats.'],
+  ['Go Play', `Zero meta-progression: every run starts from scratch. Collect trophies for completing long-lasting runs and beat all ${OPPONENTS.length} opponents. Your build gets stronger, the gaps get longer, and eventually probability wins. One more run?`],
 ];
 
 export function howtoScreen(app: App): HTMLElement {

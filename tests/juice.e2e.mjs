@@ -184,7 +184,7 @@ for (const kind of ['desktop', 'phone']) {
     await clearSfx(page);
     const rr = page.locator('#reroll-store'); await rr.scrollIntoViewIfNeeded();
     if (kind === 'phone') await rr.tap(); else await rr.click();
-    await page.waitForTimeout(150);
+    await page.waitForFunction(() => !!document.querySelector('.offers .up-card.deal'), null, { timeout: 1500 }).catch(() => {});
     const dealtNow = await page.$$eval('.offers .up-card', (cs) => cs.map((c) => ({ sold: c.classList.contains('sold-card'), deal: c.classList.contains('deal') })));
     await page.waitForTimeout(700);
     const after = await soldOpacity();
@@ -398,7 +398,7 @@ for (const kind of ['desktop', 'phone']) {
 {
   // the "Reduce animations" switch in the sound menu does the same, and is remembered
   const page = await open('desktop');
-  await page.click('#sound-toggle'); await page.click('#reduce-anim');
+  await page.click('#settings-toggle'); await page.click('#reduce-anim');
   check('"Reduce animations" switch turns effects off', await page.evaluate(() => document.documentElement.classList.contains('calm')));
   await page.reload();
   check('…and is remembered after reload', await page.evaluate(() => document.documentElement.classList.contains('calm')));

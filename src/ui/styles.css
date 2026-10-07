@@ -688,3 +688,11 @@ html.dying, html.dying body { overflow-x: clip; }
 .btn.music-on { border-style: dashed; color: var(--gold); background: transparent; }
 .btn.music-on:hover:not(:disabled) { background: rgba(255,255,255,.05); }
 .sd-panel .music-on { justify-self: stretch; }
+
+/* Settings (was the sound menu) */
+.sd-toggle { display: inline-flex; align-items: center; gap: 6px; }
+.sd-gear { display: inline-grid; place-items: center; }
+.sd-muted { color: var(--loss); }
+.sd-head { margin-top: 2px; }
+.sd-exit { display: grid; gap: 6px; padding-top: 10px; margin-top: 2px; border-top: 1px solid var(--line); }
+.sd-exit .small { margin: 0; max-width: 30ch; }

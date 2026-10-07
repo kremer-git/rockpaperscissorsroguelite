@@ -109,6 +109,14 @@ const app: App = {
       app.busy = true;
       void director.gapReveal(curveGap(s, s.stage + 1), getOpponent(s.nextOpponentId).name).then(() => { app.busy = false; go(); });
     },
+    exitToTitle() {
+      // Mid-run exit: the run is already saved on every render, so Resume on the title screen picks it up.
+      const s = app.state;
+      if (app.busy || director.isDying() || !s || s.status === 'dead') return;
+      save(s);
+      app.soundOpen = false; app.last = null; app.allIn = false;
+      app.screen = 'title'; app.hasSave = !!load(); render();
+    },
     goStore() { if (app.state?.status === 'store') { app.screen = 'store'; render(); focusFirst('#leave-store'); } },
     goOver() { if (app.state?.status === 'dead' && app.screen !== 'over') { app.screen = 'over'; save(null); render(); director.overIntro(); focusFirst('#restart'); } },
     go(screen: Screen) { app.screen = screen; if (screen === 'howto') app.howtoStep = 0; if (screen === 'title') app.hasSave = !!load(); render(); },
