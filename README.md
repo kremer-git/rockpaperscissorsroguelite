@@ -155,7 +155,7 @@ Cosmetic animations and synthesized sounds layered on top of the game (`src/ui/j
 | Reaching a store | Bar fills, gold sweep, bell |
 | Store opens | Cards are dealt in one by one (not clickable mid-deal); a legendary card gets a gold shimmer |
 | Leaving a store | The store doesn't say how long the next stretch is (*?? rounds*). Pressing Continue opens a full-screen reveal: the number counts up the Fibonacci steps, growing, with a drum per step and a big drum on the real number (red and a shake from 34 up), then the rounds start. A tap skips it. With reduced animations it goes straight to the rounds, where the bar shows the length |
-| Buying | Red BOUGHT stamp on the card (the token that flew to the build list was removed: too distracting) |
+| Buying | BOUGHT slams onto the card in red, then settles into the same grey, straight label as every other bought card (the token that flew to the build list was removed: too distracting) |
 | 0 Extra Lives | Subtle, slowly pulsing red edges (not at the start of a Hard Mode run; only once a bought life is gone) |
 | Always | Opponent portraits breathe very gently |
 | Death | Impact, music cut, record scratch; colour drains while the view pushes in on the clash; RUN OVER slams down with a quip and a drum; fade to the game-over screen, whose stats count up. About 2.5 s; any tap or key skips it |
@@ -169,7 +169,7 @@ Power-up cards show their tree's Rock/Paper/Scissors drawing plus one small symb
 
 ## Hard Mode, awards and layout
 
-- **Settings** (gear button, bottom left, on every screen): music, effects volume, mute, Reduce animations, and during a run *Return to title screen*. The run is saved on every move, so the title screen then offers *Resume run* (back to the same round or store) or *Start run* (which replaces the saved run).
+- **Settings** (icon-only gear button, bottom left, on every screen; shows a small *Muted* tag while muted): music, effects volume, mute, Reduce animations, and during a run *Return to title screen*. The run is saved on every move, so the title screen then offers *Resume run* (back to the same round or store) or *Start run* (which replaces the saved run).
 - **How to Play** is 8 short pages: the basics, coins and stores, the three trees, lives, opponents and tendencies, the Fibonacci gaps, fairness, and a closing *Go Play* page. Upgrade and opponent counts are filled in from the game data.
 - **Music** is off until you press *Turn on epic music?* (title screen or Settings); then the slider controls it and *Epic music* turns it off again. One 2:24 loop (`audio/music-title.mp3`, 1.7 MB, downloaded only once music is on) plays on every screen. Served over http(s) its volume goes through a Web Audio gain node, because iPhones and iPads ignore an `<audio>` element's volume (that's why the slider used to do nothing on phones). Opened from disk (`file://`) it falls back to the element volume.
 - **Input** is mouse or touch. The old keyboard shortcuts still work but are no longer labelled anywhere.

@@ -55,7 +55,7 @@ export function soundDock(app: App): HTMLElement {
         h('p', { class: 'small muted' }, 'Your run is saved. Resume it from the title screen, or start a new one.')) : null) : null,
     h('button', {
       class: 'btn small sd-toggle', id: 'settings-toggle', type: 'button', 'aria-expanded': String(app.soundOpen),
-      'aria-label': a.muted ? 'Settings (sound is muted)' : 'Settings',
+      'aria-label': a.muted ? 'Settings (sound is muted)' : 'Settings', title: 'Settings',
       onclick: () => { app.soundOpen = !app.soundOpen; app.actions.render(); },
-    }, h('span', { class: 'sd-gear', 'aria-hidden': 'true', html: GEAR }), h('span', { class: 'sd-word' }, 'Settings'), a.muted ? h('span', { class: 'sd-muted' }, ' · Muted') : null));
+    }, h('span', { class: 'sd-gear', 'aria-hidden': 'true', html: GEAR }), a.muted ? h('span', { class: 'sd-muted' }, 'Muted') : null));
 }

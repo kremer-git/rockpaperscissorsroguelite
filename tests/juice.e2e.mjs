@@ -179,6 +179,16 @@ for (const kind of ['desktop', 'phone']) {
     await shot(page, '12-bought-stamp');
     check(`${kind}: buying stamps the card, and nothing flies off to the build`, stamp.stamp && !stamp.token && (await sfx(page)).includes('stamp'), JSON.stringify(stamp));
     await page.waitForTimeout(300);
+    await page.waitForTimeout(900);
+    const settled = await page.evaluate((slot) => {
+      const el = document.querySelector(`.up-card[data-slot="${slot}"] .sold`);
+      const ref = document.createElement('span'); ref.className = 'sold'; el.closest('.card-foot').append(ref);
+      const a = getComputedStyle(el), b = getComputedStyle(ref);
+      const out = { color: a.color, ref: b.color, transform: a.transform };
+      ref.remove(); return out;
+    }, slot);
+    await shot(page, '12-bought-settled');
+    check(`${kind}: the stamp settles to the same grey, straight BOUGHT as every other bought card`, settled.color === settled.ref && (settled.transform === 'none' || settled.transform === 'matrix(1, 0, 0, 1, 0, 0)'), JSON.stringify(settled));
     const soldOpacity = async () => page.$eval(`.offers .up-card[data-slot="${slot}"]`, (c) => ({ sold: c.classList.contains('sold-card'), op: Number(getComputedStyle(c).opacity), cls: c.className, anim: getComputedStyle(c).animationName }));
     const before = await soldOpacity();
     await clearSfx(page);

@@ -625,8 +625,9 @@ html:not(.calm) .up-card.rarity-card-legendary.reveal::after { animation: shimme
 
 /* 12: bought stamp */
 .sold { display: inline-block; }
-html:not(.calm) .sold.stamp-in { animation: stamp-in .38s cubic-bezier(.3,1.6,.5,1) both; color: var(--loss); }
-@keyframes stamp-in { 0% { transform: scale(2.8) rotate(-18deg); opacity: 0; } 60% { transform: scale(.92) rotate(-6deg); opacity: 1; } 100% { transform: scale(1) rotate(-6deg); } }
+/* slams in red, then settles to the same plain label every bought card has */
+html:not(.calm) .sold.stamp-in { animation: stamp-in .9s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes stamp-in { 0% { transform: scale(2.8) rotate(-18deg); opacity: 0; color: var(--loss); } 25% { transform: scale(.92) rotate(-6deg); opacity: 1; color: var(--loss); } 55% { transform: scale(1) rotate(-6deg); color: var(--loss); } 100% { transform: none; color: var(--card-muted); } }
 html:not(.calm) .up-card.just-bought { animation: thud .3s ease-out .12s; }
 @keyframes thud { 0%, 100% { transform: none; } 40% { transform: translateY(3px) scale(.985); } }
 
@@ -696,3 +697,7 @@ html.dying, html.dying body { overflow-x: clip; }
 .sd-head { margin-top: 2px; }
 .sd-exit { display: grid; gap: 6px; padding-top: 10px; margin-top: 2px; border-top: 1px solid var(--line); }
 .sd-exit .small { margin: 0; max-width: 30ch; }
+/* icon-only gear (a small "Muted" tag only while muted) */
+.sd-toggle { min-width: 40px; min-height: 40px; justify-content: center; padding: 8px 10px; }
+.sd-gear svg { width: 20px; height: 20px; }
+.sd-muted { font-size: .78rem; }

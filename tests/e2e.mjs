@@ -468,7 +468,7 @@ for (const [w, hgt] of [[1366, 768], [390, 844]]) {
   const titles = pages.map((p) => p.title.toLowerCase());
   const want = ['it’s rock, paper, scissors – duh', 'earn and spend coins', 'build up', 'losing ends the run', 'play 20 unique opponents', 'the gaps grow', 'nothing is rigged', 'go play'];
   check(`${w}px How to Play: 8 pages in the new order`, titles.join('|') === want.join('|') && /of 8/i.test(pages[0].of), titles.join(' | '));
-  check(`${w}px How to Play: page texts`, pages[0].body.startsWith('The opponent locks in its throw before you choose. Keep playing rounds until you reach a store and then buy power-ups.')
+  check(`${w}px How to Play: page texts`, pages[0].body.replace(/\u2011/g, '-').startsWith('The opponent locks in its throw before you choose. Keep playing rounds until you reach a store and then buy power-ups.')
     && pages[1].body.startsWith('A win pays 12 coins. A tie pays 5 coins.')
     && /^51 upgrades across 3 skill trees\./.test(pages[2].body)
     && /^Beat 20 unique opponents\./.test(pages[4].body) && !/streak upgrades/.test(pages[4].body)
@@ -485,7 +485,8 @@ for (const [w, hgt, mobile] of [[1366, 768, false], [390, 844, true]]) {
   await page.route(/fonts\.(googleapis|gstatic)/, (r) => r.abort());
   await page.goto(PAGE); await page.evaluate(() => localStorage.clear()); await page.reload();
   const press = (sel) => (mobile ? page.tap(sel) : page.click(sel));
-  check(`${w}px: the corner button is Settings`, /settings/i.test(await page.innerText('#settings-toggle')));
+  const gear = await page.$eval('#settings-toggle', (b) => ({ text: b.innerText.trim(), label: b.getAttribute('aria-label'), svg: !!b.querySelector('svg'), w: b.getBoundingClientRect().width }));
+  check(`${w}px: the corner button is an icon-only Settings gear`, gear.text === '' && gear.label === 'Settings' && gear.svg && gear.w < 60, JSON.stringify(gear));
   await press('#settings-toggle');
   check(`${w}px title: Settings has sound + display, but no Return to title`, !!(await page.$('#vol-sfx')) && !!(await page.$('#reduce-anim')) && !(await page.$('#exit-to-title')));
   await press('#settings-toggle');
