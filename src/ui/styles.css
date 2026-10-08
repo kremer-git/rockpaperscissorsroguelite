@@ -637,7 +637,9 @@ html:not(.calm) .up-card.just-bought { animation: thud .3s ease-out .12s; }
 .gap-reveal.out { animation: gr-out .25s ease-in both; pointer-events: none; }
 .gr-card { display: grid; justify-items: center; gap: 10px; text-align: center; padding: 24px; }
 .gr-eye { font-size: 1rem; letter-spacing: .2em; }
-.gr-num { --dread: 1; font: 900 clamp(5rem, 22vw, 9rem)/1 var(--f-display); color: var(--gold); transform: scale(var(--dread)); min-width: 2ch; }
+.gr-num { --dread: 1; font: 900 clamp(5rem, 22vw, 9rem)/1 var(--f-display); color: var(--gold); transform: scale(var(--dread)); min-width: 2ch;
+  /* scaling doesn't move the neighbours, so reserve the growth as margin: the label and subtitle never get covered */
+  margin-block: calc((var(--dread) - 1) * .5em + .05em); transition: margin-block .12s ease-out; }
 .gap-reveal.scary .gr-num { color: var(--loss); }
 .gr-sub { font: 800 1.3rem/1.2 var(--f-display); text-transform: uppercase; opacity: 0; transform: translateY(8px); transition: opacity .25s, transform .25s; }
 .gr-sub.in { opacity: 1; transform: none; }

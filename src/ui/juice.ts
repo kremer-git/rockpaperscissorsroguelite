@@ -99,7 +99,8 @@ export function countUp(el: Element | null, from: number, to: number, ms: number
     const t0 = performance.now();
     let lastShown = from;
     const step = (now: number) => {
-      const k = Math.min(1, (now - t0) / ms);
+      // rAF's timestamp can be a little earlier than t0 (it is the frame's start), so clamp at 0 too
+      const k = Math.max(0, Math.min(1, (now - t0) / ms));
       const v = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
       if (v !== lastShown) { lastShown = v; node.textContent = format(v); onStep?.(); }
       if (k < 1) requestAnimationFrame(step); else { node.textContent = format(to); resolve(); }

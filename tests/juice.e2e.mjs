@@ -239,6 +239,9 @@ for (const kind of ['desktop', 'phone']) {
     await page.waitForFunction(() => document.querySelector('#gap-reveal .gr-num')?.textContent === '34', null, { timeout: 3000 }).catch(() => {});
     await page.waitForTimeout(250);
     await shot(page, '10-reveal-end');
+    await page.waitForTimeout(450); // the slam settles
+    const clear = await page.evaluate(() => { const e = document.querySelector('#gap-reveal .gr-eye')?.getBoundingClientRect(), n = document.querySelector('#gap-reveal .gr-num')?.getBoundingClientRect(), sub = document.querySelector('#gap-reveal .gr-sub')?.getBoundingClientRect(); return e && n && sub ? { eyeBottom: e.bottom, numTop: n.top, numBottom: n.bottom, subTop: sub.top } : null; });
+    check(`${kind}: at full size the number doesn't cover the label or the subtitle`, !!clear && clear.eyeBottom <= clear.numTop + 4 && clear.numBottom <= clear.subTop + 4, JSON.stringify(clear));
     const end = await page.evaluate(() => ({ num: document.querySelector('#gap-reveal .gr-num')?.textContent, sub: document.querySelector('#gap-reveal .gr-sub')?.textContent, scary: document.getElementById('gap-reveal')?.classList.contains('scary') }));
     const drums = (await sfx(page)).filter((x) => x === 'drum').length;
     check(`${kind}: reveal lands on the real gap with drums and a big final drum`, end.num === '34' && /rounds vs /.test(end.sub) && end.scary && drums >= 6 && (await sfx(page)).includes('drumBig'), `${JSON.stringify(end)}, ${drums} drums`);
